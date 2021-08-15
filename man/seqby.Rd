@@ -13,9 +13,6 @@ seqby(from, to, by)
 
 \item{by}{increment of the sequence}
 }
-\value{
-Returns a sequence of numeric or integer values.
-}
 \description{
 Create a sequence between two values at regular intervals and include bounds in output.
 }

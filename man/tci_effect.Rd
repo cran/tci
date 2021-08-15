@@ -35,9 +35,6 @@ Can be increased for more precision.}
 
 \item{...}{Arguments used by pkmod.}
 }
-\value{
-Returns a numeric value with length one.
-}
 \description{
 Function for calculating a TCI infusion schedule corresponding to a set of target concentrations.
 This function makes use of formulas described by Shafer and Gregg (1992) in "Algorithms to rapidly achieve

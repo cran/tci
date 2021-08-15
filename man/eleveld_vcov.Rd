@@ -21,9 +21,6 @@ eleveld_vcov(
 
 \item{varnames}{Column names of variables used to calculate variance-covariance matrix}
 }
-\value{
-Returns a variance-covariance matrix as a numeric matrix.
-}
 \description{
 Generate the variance-covariance matrix for Eleveld PK-PD model for an observation
 via Monte Carlo sampling.

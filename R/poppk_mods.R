@@ -2,20 +2,17 @@
 #' Population PK and PK-PD functions --------------------------------------------------
 #' ------------------------------------------------------------------------------------
 
-#' @name marsh_poppk
-#' @title Marsh population PK model.
-#' @description Takes in a data frame with a column labeled "TBM" providing the total
-#' body mass of patients. The function returns the original data frame with additional
-#' columns describing estimated patient PK parameters based on the Marsh population PK
-#' model. The effect-site elimination parameter, KE0, is set to 1.2 in accordance with
-#' recommendations from Absalom et al., 2009 "Pharmacokinetic models for propofol-
-#' Defining and illuminating the devil in the detail"
+#' Marsh population PK model.
+#'
+#' Takes in a vector of patient weights and returns a data frame of patient PK-PD parameters.
+#' KE0 parameter set to 1.2 in accordance with recommendations
+#' from Absalom et al., 2009 "Pharmacokinetic models for propofol- Defining and
+#' illuminating the devil in the detail"
+#'
 #' @param df data frame with column titled "TBM" giving patient total body
 #' mass in kg.
 #' @param rate Logical. Should elimination rate constants be returned instead
 #' of clearance parameters.
-#' @return Returns the original data frame entered into function with additional columns appended
-#' describing patient PK parameter values.
 #' @export
 marsh_poppk <- function(df, rate = TRUE){
   if(!("TBM" %in% names(df))) stop('The data frame must have a column named "TBM"')
@@ -55,17 +52,12 @@ marsh_poppk <- function(df, rate = TRUE){
 
 #' @name schnider_poppk
 #' @title Schnider population PK model
-#' @description Evaluate Schnider population PK model at patient covariate values. The function
-#' takes in a data frame with columns "AGE","TBM","HGT","MALE" corresponding to patient covariate
-#' values and returns the same data frame with additional columns added corresponding to patient
-#' PK parameter values described by the Schnider population PK model.
+#' @description Evaluate Schnider population PK model at patient covariate values.
 #' @param df data frame with variable names "AGE","TBM","HGT","MALE"
 #' @param rate Logical. Should rate parameters be returned rather than clearance.
 #' Defaults to FALSE
 #' @param rand Logical. Should a vector of Monte Carlo samples be returned instead
 #' of point estimates at patient covariate values. Defaults to FALSE.
-#' @return Returns the original data frame entered into function with additional columns appended
-#' describing patient PK parameter values.
 #' @export
 schnider_poppk <- function(df, rate = FALSE, rand = FALSE){
 
@@ -84,7 +76,7 @@ schnider_poppk <- function(df, rate = FALSE, rand = FALSE){
     theta <- matrix(theta0, nrow = 1)
   }
 
-  # calculate lean body mass
+  # caclulate lean body mass
   df$LBM <- ifelse(df$MALE, 1.1*df$TBM - 128*(df$TBM/df$HGT)^2, 1.07*df$TBM - 148*(df$TBM/df$HGT)^2)
 
   df$V1  = theta[,1]
@@ -123,12 +115,7 @@ schnider_poppk <- function(df, rate = FALSE, rand = FALSE){
 
 #' @name eleveld_poppk
 #' @title Eleveld population PK model
-#' @description Function to generate PK-PD parameters for the Eleveld et al. (2018) PK-PD model.
-#' Function takes a data frame of patient covariate values with variable names
-#' "AGE","PMA","WGT","HGT","M1F2","TECH",and "A1V2" and returns PK parameter values. PK-PD values
-#' are generated at the point estimates for each patient (i.e. based on covariates alone) by default;
-#' however, random sets of parameter values can be drawn through Monte Carlo simulation based on
-#' the random effect/population variance terms described in Eleveld et al.
+#' @description Function takes a data frame of patient covariate values with variable names "AGE","PMA","WGT","HGT","M1F2","TECH",and "A1V2" and returns PK parameter values.
 #' @param df Data frame with variable names "AGE","PMA","WGT","HGT","M1F2","TECH",and "A1V2"
 #' @param PD Logical. Should PD parameters be returned in addition to PK parameters.
 #' Defaults to TRUE.
@@ -136,7 +123,6 @@ schnider_poppk <- function(df, rate = FALSE, rand = FALSE){
 #' Defaults to FALSE
 #' @param rand Logical. Should a vector of Monte Carlo samples be returned instead
 #' of point estimates at patient covariate values. Defaults to FALSE.
-#' @return Returns the original data frame with columns added corresponding to patient PK-PD parameter values.
 #' @export
 eleveld_poppk <- function(df, PD = TRUE, rate = FALSE, rand = FALSE){
 

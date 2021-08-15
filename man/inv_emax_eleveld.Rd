@@ -9,18 +9,10 @@ inv_emax_eleveld(pdresp, pars)
 \arguments{
 \item{pdresp}{PD response values}
 
-\item{pars}{A vector of parameter values of length 5 corresponding to parameters
-(c50,gamma,gamma2,E0,Emx). 'c50' describes the concentration required for 50% effect, 'gamma'
-and 'gamma2' are the Hill parameter for concentrations before and after c50, respectively,
-'e0' is the response value at a concentration of 0 and 'emx' is the maximum change in response.}
-}
-\value{
-Returns a numeric vector of effect-site concentrations calculated by inverting
-the Emax model used by Eleveld et al. (2018).
+\item{pars}{Named vector of parameter values with names (c50,gamma,E0,Emx).}
 }
 \description{
-Inverse of Emax function used by Eleveld et al. (2018) population PK model.
-The Emax function has five parameters: the
+Inverse of Emax function used by Eleveld population PK model.
 }
 \examples{
 pars_emax_eleveld <- c(c50 = 1.5, gamma = 1.47, gamma2 = 1.89, e0 = 100, emx = 100)

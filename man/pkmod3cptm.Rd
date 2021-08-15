@@ -27,11 +27,6 @@ pkmod3cptm(
 \item{returncpt}{Optionally specify a single compartment to return concentrations for.
 Defaults to returning all compartment concentrations.}
 }
-\value{
-Returns a numeric matrix with predicted concentrations
-for a three-compartment model with a metabolite/effect-site compartment and IV infusion.
-Compartments are represented in rows while times are in columns.
-}
 \description{
 3 compartment IV infusion with first-order absorption between compartments and with an additional effect-site compartment.
 The analytical solutions implemented in this function are provided in "ADVAN-style analytical solutions for common pharmacokinetic models" by

@@ -21,9 +21,6 @@ existing TCI pumps (e.g. Anestfusor TCI program).}
 
 \item{...}{Arguments passed on to pkmod.}
 }
-\value{
-Returns a numeric value with length one.
-}
 \description{
 TCI algorithm based on the algorithm described by Jacobs (1990).
 }

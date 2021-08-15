@@ -11,10 +11,6 @@ inv_emax(pdresp, pars)
 
 \item{pars}{Named vector of parameter values with names (c50,gamma,E0,Emx).}
 }
-\value{
-Returns a numeric vector of effect-site concentrations corresponding to responses
-from a 4-parameter Emax model.
-}
 \description{
 Inverse Emax function to return effect-site concentrations required to reach target effect.
 }

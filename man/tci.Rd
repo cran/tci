@@ -40,9 +40,6 @@ reach the target.}
 
 \item{...}{Arguments passed on to TCI algorithm.}
 }
-\value{
-Returns a vector of numeric values.
-}
 \description{
 Function to iterate any arbitrary TCI algorithm to a series of points. By default,
 the function will update infusion rates at fixed intervals (e.g. every 10 seconds);

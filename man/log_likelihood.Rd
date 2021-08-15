@@ -20,11 +20,6 @@ assumed to be the residual error term.}
 
 \item{fixed_lpr}{values used by PD function that are not updated.}
 }
-\value{
-Returns a numeric value representing the logged likelihood value associated with parameter values 'lpr'
-and observed data in matrix 'dat'. Observations are assumed to follow a truncated normal distribution with
-lower bound 0 if only a PK model is specified and bounded by 0 and 100 if a PD model is also provided.
-}
 \description{
 Function to evaluate the log likelihood given a set of logged parameter values and a set of observed BIS values.
 It is assumed that the full set of parameters are given by indices (pk_ix, pd_ix), of which a subset may be

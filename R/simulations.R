@@ -17,10 +17,8 @@
 #' @param delay Delay between generation and observation of measurements.
 #' @param max_pdval Maximum PD value.
 #' @param min_pdval Minimum PD value
-#' @importFrom stats rnorm
+#' @import stats
 #'
-#' @return Returns a list of simulated responses with class 'datasim' corresponding to the infusion schedule provided.
-#' A "plot.datasim" method exists for visualizing results.
 #' @export
 gen_data <- function(inf, pkmod, pars_pk0,
                      sigma_add = 0, sigma_mult = 0,
@@ -37,7 +35,7 @@ gen_data <- function(inf, pkmod, pars_pk0,
   if(is.null(init))
     init <- eval(formals(pkmod)$init)
 
-  con0 <- predict.pkmod(object = pkmod, inf = inf, tms = tms, pars = pars_pk0, init = init)
+  con0 <- predict(object = pkmod, inf = inf, tms = tms, pars = pars_pk0, init = init)
 
   # additive and multiplicative errors
   eadd  <- rnorm(nrow(con0),0,sigma_add)
@@ -97,8 +95,6 @@ gen_data <- function(inf, pkmod, pars_pk0,
 #' infusion schedules can be passed directly in or as a list.
 #' @param ... Set of datasim objects created from `gen_data` function.
 #'
-#' @return Return a list of merged data simulation objects, each with class 'datasim'.
-#' The resulting list also retains class 'datasim'. A "plot.datasim" method exists for visualizing results.
 #' @export
 combine_sim <- function(...){
   simlist <- list(...)
@@ -137,9 +133,6 @@ combine_sim <- function(...){
 #' names used by model "mod"
 #' @param mod Population PK model to apply to rows of patient_df
 #' @param ... Arguments passed on to population PK model.
-#' @return The function applies either the Marsh (1991), Schnider et al. (1998), or Eleveld et al (2018) PK models for
-#' propofol to a dataframe with patient covariate values and returns PK (or PK-PD, in the case of the Eleveld model)
-#' parameter values. The function returns the original dataframe merged with parameter values for each individual (in rows).
 #' @export
 apply_poppk <- function(patient_df, mod = c("marsh","schnider","eleveld"), ...){
   switch(match.arg(mod),
@@ -159,8 +152,7 @@ apply_poppk <- function(patient_df, mod = c("marsh","schnider","eleveld"), ...){
 #' @param mu mean for model parameters and mean residual error
 #' @param sig variance covariance matrix for model parameters
 #' @importFrom mvtnorm dmvnorm
-#' @return Returns a numeric value representing the logged prior value associated with parameter values 'lpr' for a
-#' multivariate normal distribution with mean vector 'mu' and variance-covariance matrix 'sig'.
+#'
 #' @export
 log_prior <- function(lpr, mu, sig){
   mvtnorm::dmvnorm(lpr, mu, sig, log = TRUE)
@@ -182,9 +174,6 @@ log_prior <- function(lpr, mu, sig){
 #' @param fixed_ix indices of (pars_pk,pars_pd) corresponding to PD function values
 #' @param fixed_lpr values used by PD function that are not updated.
 #' @importFrom truncnorm dtruncnorm
-#' @return Returns a numeric value representing the logged likelihood value associated with parameter values 'lpr'
-#' and observed data in matrix 'dat'. Observations are assumed to follow a truncated normal distribution with
-#' lower bound 0 if only a PK model is specified and bounded by 0 and 100 if a PD model is also provided.
 #'
 #' @export
 log_likelihood <- function(lpr, dat, pk_ix, pd_ix, fixed_ix = NULL, fixed_lpr = NULL){
@@ -214,7 +203,7 @@ log_likelihood <- function(lpr, dat, pk_ix, pd_ix, fixed_ix = NULL, fixed_lpr = 
   ini <- dat$inf[1,grep("c[0-9]_start",colnames(dat$inf))]
 
   # predict concentrations at lpr
-  cp <- predict.pkmod(dat$pkmod,
+  cp <- predict(dat$pkmod,
                 inf = dat$inf,
                 tms = tms,
                 pars = epars[pk_ix],
@@ -232,16 +221,50 @@ log_likelihood <- function(lpr, dat, pk_ix, pd_ix, fixed_ix = NULL, fixed_lpr = 
 }
 
 
+# log_likelihood <- function(lpr, dat, pk_ix, pd_ix, err_ix){
+#
+#   # restrict times to allow for time lag
+#   if("timeobs" %in% colnames(dat$sim)){
+#     tm_all <- dat$sim[,"time"]
+#     tm_obs <- dat$sim[,"timeobs"]
+#     tms <- tm_all[tm_obs <= max(tm_all)]
+#     val_obs <- dat$sim[tm_obs <= max(tm_all),"pdobs"]
+#   } else{
+#     tms <- dat$sim[,"time"]
+#     if("pdobs" %in% colnames(dat$sim))
+#       val_obs <- dat$sim[,"pdobs"]
+#     else val_obs <- dat$sim[,"cobs"]
+#   }
+#
+#   # predicted initial concentrations from data
+#   ini <- dat$inf[1,grep("c[0-9]_start",colnames(dat$inf))]
+#
+#   # predict concentrations at lpr
+#   cp <- predict(dat$pkmod,
+#                 inf = dat$inf,
+#                 tms = tms,
+#                 pars = exp(lpr[pk_ix]),
+#                 init = ini)
+#
+#   # if pd model isn't given, evaluate likelihood at pk observations
+#   if(is.null(dat$pdmod)){
+#     return(sum(log(truncnorm::dtruncnorm(x = val_obs, mean = cp[,"c1"], sd = exp(lpr[err_ix]), a = 0))))
+#   } else{
+#     # apply function to lpr if applicable - e.g. have parameters change based on predicted concentration
+#     econ <- cp[,paste0("c",dat$ecmpt)]
+#     bisp <- dat$pdmod(ce = econ, pars = exp(c(lpr[pd_ix],fixed_lpr)))
+#     return(sum(log(truncnorm::dtruncnorm(x = val_obs, mean = bisp, sd = exp(lpr[err_ix]), a = 0, b = 100))))
+#   }
+# }
+
+
 #' Function to evaluate the negative log posterior given a set of logged parameter values and observed BIS values.
 #' @param lpr logged PK-PD-error parameter values
 #' @param dat data frame with columns corresponding to observed time and PD response values.
 #' @param mu Mean of prior distribution.
 #' @param sig Variance-covariance matrix of prior distribution.
 #' @param ... Arguments passed on to log-likelihood.
-#' @return Returns a numeric value representing the negative logged-posterior probability associated with a vector
-#' parameter values 'lpr' with observations specified in 'dat' and prior parameters 'mu' and 'sigma'. Observations
-#' are assumed to follow a (potentially truncated) normal distribution described in function 'log_likelihood'.
-#' Parameter values have a multivariate normal prior distribution.
+#'
 #' @export
 log_posterior_neg <- function(lpr, dat, mu, sig, ...) {
     -1*(log_prior(lpr,mu,sig) + log_likelihood(lpr, dat, ...))
@@ -253,7 +276,7 @@ log_posterior_neg <- function(lpr, dat, mu, sig, ...) {
 #' Format data frame of closed-loop targets.
 #' @param time Times at which target values are set
 #' @param target Response target values
-#' @return Returns a data frame with columns "time" and "target" as are required for use in the "bayes_control" function.
+#'
 #' @export
 cl_targets <- function(time, target){
   data.frame(time = time, target = target)
@@ -270,8 +293,7 @@ cl_targets <- function(time, target){
 #' covariance matrix is overwritten. Consequently, any "TRUE" updates will only use data since
 #' the last "FALSE" update.
 #' @param plot_progress Vector of logical values. Should values be plotted at each update?
-#' @return Returns a data frame with columns "time", "full_data", and "plot_progress"
-#' that are used as simulation parameters in the "bayes_control" function.
+#'
 #' @export
 cl_updates <- function(time, full_data = TRUE, plot_progress = FALSE){
   data.frame(time = time, full_data = full_data, plot_progress = plot_progress)
@@ -300,10 +322,8 @@ cl_updates <- function(time, full_data = TRUE, plot_progress = FALSE){
 #' @param sim_starttm Start time of simulation
 #' @param tci_alg TCI algorithm used. Defaults to effect-site targeting.
 #' @param print_progress Logical. Should current update times be printed to the console.
-#' @return Returns a list with class "bayessim" containing results from the Bayesian closed-loop
-#' simulation. A "plot.bayessim" method exists for visualizing results.
+#'
 #' @importFrom utils head tail
-#' @importFrom stats optim
 #' @export
 bayes_control <- function(targets, updates, prior, true_pars,
                           pkmod = pkmod3cptm, pdmod = emax_eleveld,
@@ -331,6 +351,15 @@ bayes_control <- function(targets, updates, prior, true_pars,
   update_full <- c(NA, updates$full_data)
   plot_progress <- c(NA, updates$plot_progress)
 
+  # combine update times into set of target times
+  na.locf <- function(x) {
+    v <- !is.na(x)
+    c(NA, x[v])[cumsum(v)+1]
+  }
+  targets_new <- data.frame(time = sort(union(targets$time, update_tms)))
+  targets_new <- merge(targets_new, targets, all.x = TRUE)
+  targets_new$target <- na.locf(targets_new$target)
+
   true_pk <- unlist(true_pars$pars_pkpd[true_pars$pk_ix])
   true_pd <- unlist(true_pars$pars_pkpd[-true_pars$pk_ix])
 
@@ -347,7 +376,7 @@ bayes_control <- function(targets, updates, prior, true_pars,
     prior_pd <- prior$pars_pkpd[prior$pd_ix]
 
     # subset targets and observation times to period being updated
-    targets_sub <- targets[targets$time <= update_tms[i] & targets$time >= update_tms[i-1],]
+    targets_sub <- targets_new[targets_new$time <= update_tms[i] & targets_new$time >= update_tms[i-1],]
     obs_tms_sub <- obs_tms[obs_tms <= update_tms[i] & obs_tms > update_tms[i-1]]
 
     # calculate tci infusions at prior parameter estimates for update period
@@ -388,59 +417,69 @@ bayes_control <- function(targets, updates, prior, true_pars,
 
     lpr_all <- rbind(lpr_all, lpr)
 
-    # indicate if full dataset should be used for updates
-    if(update_full[i]){
-      dat_eval <- dat0
+    # check if any observations are available
+    if(any(dat0$sim[,"timeobs"] <= update_tms[i])){
 
-      # use full dataset and original vcov matrix
-      post_est <- optim(par = lpr,
-                        fn = log_posterior_neg,
-                        dat = dat_eval,
-                        mu = lpr,
-                        sig = prior0$sig,
-                        pk_ix = prior$pk_ix,
-                        pd_ix = prior$pd_ix,
-                        fixed_ix = prior$fixed_ix,
-                        fixed_lpr = lpr_fixed,
-                        method = "BFGS",
-                        hessian = FALSE)
+      # indicate if full dataset should be used for updates
+      if(update_full[i]){
+        dat_eval <- dat0
 
-    } else{
-      dat_eval <- dat
-      post_est <- optim(par = lpr,
-                        fn = log_posterior_neg,
-                        dat = dat_eval,
-                        mu = lpr,
-                        sig = prior$sig,
-                        fixed_lpr = lpr_fixed,
-                        method = "BFGS",
-                        hessian = TRUE)
+        # use full dataset and original vcov matrix
+        post_est <- optim(par = lpr,
+                          fn = log_posterior_neg,
+                          dat = dat_eval,
+                          mu = lpr,
+                          sig = prior0$sig,
+                          pk_ix = prior$pk_ix,
+                          pd_ix = prior$pd_ix,
+                          fixed_ix = prior$fixed_ix,
+                          fixed_lpr = lpr_fixed,
+                          method = "BFGS",
+                          hessian = FALSE)
 
-     # update vcov matrix
-     prior$sig <- solve(post_est$hessian)
-    }
+      } else{
+        dat_eval <- dat
+        post_est <- optim(par = lpr,
+                          fn = log_posterior_neg,
+                          dat = dat_eval,
+                          mu = lpr,
+                          sig = prior$sig,
+                          pk_ix = prior$pk_ix,
+                          pd_ix = prior$pd_ix,
+                          fixed_ix = prior$fixed_ix,
+                          fixed_lpr = lpr_fixed,
+                          method = "BFGS",
+                          hessian = TRUE)
 
-    if(plot_progress[i]){
-      print(plot(dat0, lpars_update = post_est$par,
-                         lpars_fixed = log(prior$pars_pkpd[prior$fixed_ix])))
-    }
+        # update vcov matrix
+        prior$sig <- solve(post_est$hessian)
+      }
+      if(post_est$convergence != 0)
+        warning(paste("Posterior failed to converge on update",i,"with code",post_est$convergence))
 
-    # update prior values
-    if(any(!is.null(prior$fixed_ix))){
-      prior$pars_pkpd[-prior$fixed_ix] <- exp(head(post_est$par,-1))
-      prior$err <- exp(tail(post_est$par,1))
-    } else{
-      prior$pars_pkpd <- exp(head(post_est$par,-1))
-      prior$err <- exp(tail(post_est$par,1))
+
+      if(plot_progress[i]){
+        print(plot(dat0, lpars_update = post_est$par,
+                   lpars_fixed = log(prior$pars_pkpd[prior$fixed_ix])))
+      }
+
+      # update prior values
+      if(any(!is.null(prior$fixed_ix))){
+        prior$pars_pkpd[-prior$fixed_ix] <- exp(head(post_est$par,-1))
+        prior$err <- exp(tail(post_est$par,1))
+      } else{
+        prior$pars_pkpd <- exp(head(post_est$par,-1))
+        prior$err <- exp(tail(post_est$par,1))
+      }
     }
 
     # update true and predicted initial values
     init0 <- dat0$sim[nrow(dat0$sim),grep("c[0-9]",colnames(dat0$sim))]
-    init_p <- as.numeric(predict.pkmod(pkmod,
-                                       inf = dat0$inf,
-                                       tms = update_tms[i],
-                                       pars = prior$pars_pkpd[prior$pk_ix],
-                                       init = init_start)[-1])
+    init_p <- as.numeric(predict(pkmod,
+                                 inf = dat0$inf,
+                                 tms = update_tms[i],
+                                 pars = prior$pars_pkpd[prior$pk_ix],
+                                 init = init_start)[-1])
 
   }
 
@@ -466,17 +505,16 @@ bayes_control <- function(targets, updates, prior, true_pars,
 
 
 
-#' #' Sigmoid target function
-#' #'
-#' #' @param lpars Logged parameter values
-#' #' @param tms Times to evaluate sigmoid function
-#' #' @param bis0 BIS value with no drug administered
-#' #' @param ... Arguments passed on to 'restrict_sigmoid' function
-#' #' @return Returns numeric vector of BIS values corresponding to an Emax sigmoidal
-#' #' target function with parameter bis0.
-#' #' @export
-#' sigmoid_targetfn <- function(lpars, tms, bis0 = 93, ...)
-#'   emax(tms, restrict_sigmoid(t50 = exp(lpars), BIS0 = bis0, ...))
+#' Sigmoid target function
+#'
+#' @param lpars Logged parameter values
+#' @param tms Times to evaluate sigmoid function
+#' @param bis0 BIS value with no drug administered
+#' @param ... Arguments passed on to 'restrict_sigmoid' function
+#'
+#' @export
+sigmoid_targetfn <- function(lpars, tms, bis0 = 93, ...)
+  emax(tms, restrict_sigmoid(t50 = exp(lpars), BIS0 = bis0, ...))
 
 
 # #' Cubic target function
@@ -493,8 +531,7 @@ bayes_control <- function(targets, updates, prior, true_pars,
 #' Apply target function to a PK-PD model
 #'
 #' Function to apply any specified target function to a PK-PD model
-#' and TCI algorithm. 'targetfn' should be a function with parameters
-#' 'lp' as the first argument and times 'tm' as the second.
+#' and TCI algorithm.
 #'
 #' @param lp Logged parameter values
 #' @param tm Time values to evaluate
@@ -505,8 +542,7 @@ bayes_control <- function(targets, updates, prior, true_pars,
 #' @param pdmod PD model to evaluate
 #' @param pdinv Inverse PD model
 #' @param ... Additional arguments passed on to tci_pd
-#' @return Return a set of infusions designed to reach a target function
-#' specified in argument 'targetfn'.
+#'
 #' @export
 apply_targetfn <- function(lp, tm, targetfn, prior_pk, prior_pd,
                            pkmod = pkmod3cptm,

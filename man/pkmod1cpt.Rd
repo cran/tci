@@ -17,10 +17,6 @@ pkmod1cpt(tm, kR, pars, init = 0, inittm = 0)
 
 \item{inittm}{Time of initiation of infusion. Defaults to 0.}
 }
-\value{
-Returns a vector of numeric values describing predicted concentrations
-for a one-compartment model with IV infusion.
-}
 \description{
 One compartment IV infusion with first-order elimination.
 }

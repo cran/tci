@@ -10,9 +10,6 @@ An object of class \code{character} of length 7.
 \usage{
 pal
 }
-\value{
-Returns a named vector of color hex values.
-}
 \description{
 Color palate for tci plotting functions
 }

@@ -15,15 +15,8 @@ Defaults to FALSE}
 \item{rand}{Logical. Should a vector of Monte Carlo samples be returned instead
 of point estimates at patient covariate values. Defaults to FALSE.}
 }
-\value{
-Returns the original data frame entered into function with additional columns appended
-describing patient PK parameter values.
-}
 \description{
-Evaluate Schnider population PK model at patient covariate values. The function
-takes in a data frame with columns "AGE","TBM","HGT","MALE" corresponding to patient covariate
-values and returns the same data frame with additional columns added corresponding to patient
-PK parameter values described by the Schnider population PK model.
+Evaluate Schnider population PK model at patient covariate values.
 }
 \examples{
 marsh_poppk(data.frame(TBM = c(50,70,90)))

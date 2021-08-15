@@ -11,9 +11,6 @@ cl_targets(time, target)
 
 \item{target}{Response target values}
 }
-\value{
-Returns a data frame with columns "time" and "target" as are required for use in the "bayes_control" function.
-}
 \description{
 Format data frame of closed-loop targets.
 }

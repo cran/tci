@@ -5,7 +5,7 @@
 
 
 #' Color palate for tci plotting functions
-#' @return Returns a named vector of color hex values.
+#'
 #' @export
 pal  <- c(black = "#020201",
           navy  = "#6f859b",
@@ -21,8 +21,6 @@ pal  <- c(black = "#020201",
 #' Function to extract the last element from a vector or the last column from a matrix
 #'
 #' @param x Vector or matrix
-#' @return Returns either a single numeric value if 'x' is a vector or a vector of
-#' numeric values if 'x' is a matrix.
 #' @export
 tail_vec <- function(x){
 
@@ -111,7 +109,6 @@ tail_vec <- function(x){
 #' @param from sequence starting value
 #' @param to sequence end value
 #' @param by increment of the sequence
-#' @return Returns a sequence of numeric or integer values.
 #' @export
 seqby <- function(from, to, by)
   sort(union(seq(from, to, by), c(from, to)))

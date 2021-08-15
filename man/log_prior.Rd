@@ -13,10 +13,6 @@ log_prior(lpr, mu, sig)
 
 \item{sig}{variance covariance matrix for model parameters}
 }
-\value{
-Returns a numeric value representing the logged prior value associated with parameter values 'lpr' for a
-multivariate normal distribution with mean vector 'mu' and variance-covariance matrix 'sig'.
-}
 \description{
 Function to return the prior probability for a set of parameters
 assuming a log-normal distribution.

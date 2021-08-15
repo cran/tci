@@ -27,9 +27,6 @@ to the last compartment.}
 \item{...}{Arguments to be passed on to 'tci'. These can include alternate
 TCI algorithms if desired.}
 }
-\value{
-Returns a vector of numeric values.
-}
 \description{
 Function to extend TCI grid to a set of PD targets
 }

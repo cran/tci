@@ -17,12 +17,6 @@ log_posterior_neg(lpr, dat, mu, sig, ...)
 
 \item{...}{Arguments passed on to log-likelihood.}
 }
-\value{
-Returns a numeric value representing the negative logged-posterior probability associated with a vector
-parameter values 'lpr' with observations specified in 'dat' and prior parameters 'mu' and 'sigma'. Observations
-are assumed to follow a (potentially truncated) normal distribution described in function 'log_likelihood'.
-Parameter values have a multivariate normal prior distribution.
-}
 \description{
 Function to evaluate the negative log posterior given a set of logged parameter values and observed BIS values.
 }

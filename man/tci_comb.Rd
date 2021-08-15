@@ -23,9 +23,6 @@ to plasma targeting.}
 
 \item{...}{Arguments passed on to 'tci_plasma' and 'tci_effect' functions.}
 }
-\value{
-Returns a numeric value with length one.
-}
 \description{
 Modified effect-site TCI algorithm that switches to plasma-targeting when the
 plasma concentration is within 20\%

@@ -9,13 +9,7 @@ emax_eleveld(ce, pars)
 \arguments{
 \item{ce}{Vector of effect-site concentrations.}
 
-\item{pars}{A vector of parameter values of length 5 corresponding to parameters
-(c50,gamma,gamma2,E0,Emx). 'c50' describes the concentration required for 50% effect, 'gamma'
-and 'gamma2' are the Hill parameter for concentrations before and after c50, respectively,
-'e0' is the response value at a concentration of 0 and 'emx' is the maximum change in response.}
-}
-\value{
-Returns a numeric vector of predictions from the Emax model used by Eleveld et al. (2018).
+\item{pars}{Vector of parameter values in order (c50,gamma,gamma2,e0,emx).}
 }
 \description{
 The parameter gamma takes one of two values depending on whether ce <= c50.

@@ -12,10 +12,6 @@ create_intvl(dose, inittm = 0)
 
 \item{inittm}{Starting time of initial infusion}
 }
-\value{
-Returns a matrix of infusions with columns "infrt", "begin", and "end"
-indicating infusion rates and corresponding begin and end times, respectively.
-}
 \description{
 Create a dosing schedule object with columns "infrt", "begin", "end" from
 vectors of infusions and infusion end times. The argument "inittm" is used

@@ -11,9 +11,6 @@ elvdlpars(x, pd = TRUE)
 
 \item{pd}{Logical. Should PD parameters be returned in addition to PK parameters.}
 }
-\value{
-Returns a numeric vector.
-}
 \description{
 Extract the logged parameter values to be updated within the Eleveld model
 from a data frame of patient PK-PD values.

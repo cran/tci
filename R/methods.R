@@ -18,8 +18,6 @@
 #' changes in infusion rates should be returned if not included in prediction
 #' times. Defaults to TRUE, so that only concentrations at specified times
 #' are returned.
-#' @return Returns predicted concentrations associated with 'object' with class
-#' 'pkmod' and infusion schedule 'inf'.
 #'
 #' @export
 predict.pkmod <- function(object, ..., inf, tms = NULL, dtm = 1/6, return_init = FALSE,
@@ -119,6 +117,89 @@ predict.pkmod <- function(object, ..., inf, tms = NULL, dtm = 1/6, return_init =
 }
 
 
+
+#' Predict concentrations from a pkmod object - test version for Rcpp functions
+#'
+#' Predict method to apply pk model piecewise to infusion schedule
+#' @param object An object with class pkmod.
+#' @param ... Arguments passed on to pkmod
+#' @param inf An infusion schedule object with columns "begin","end","infrt".
+#' @param tms Times to evaluate predictions at. Will default to a sequence
+#' spanning the infusions at intervals of dtm.
+#' @param dtm Interval used for prediction if argument tms is unspecified.
+#' @param return_init Logical indicating if concentrations at time 0 should
+#' be returned. Defaults to FALSE.
+#' @param remove_bounds Logical, indicating if concentrations calculated at
+#' changes in infusion rates should be returned if not included in prediction
+#' times. Defaults to TRUE, so that only concentrations at specified times
+#' are returned.
+#'
+#' @export
+predict_pkmod <- function(object, ..., inf, tms = NULL, dtm = 1/6, return_init = FALSE,
+                          remove_bounds = TRUE){
+
+  ncmpt <- NA
+  if(!all(c("infrt","begin","end") %in% colnames(inf)))
+    stop("inf must include 'infrt','begin','end' as column names")
+
+  dot.args <- list(...)
+
+  if(!("init" %in% names(formals(object))))
+    stop("object must contain argument 'init'")
+
+  if(!("pars" %in% names(dot.args)) &
+     is.symbol(formals(object)$pars))
+    stop("PK parameters must be passed as 'pars' within predict or set
+         as defaults in PK model object")
+
+  if("init" %in% names(dot.args)){
+    init <- unlist(dot.args$init)
+  } else {
+    init <- eval(formals(object)$init)
+  }
+  if("pars" %in% names(dot.args)){
+    pars <- unlist(dot.args$pars)
+    dot.args$pars <- NULL
+  } else {
+    pars <- eval(formals(object)$pars)
+  }
+
+  begin <- inf[,"begin"]
+  end <- inf[,"end"]
+  infs <- inf[,"infrt"]
+  ncmpt <- length(init)
+
+  if(is.null(tms)){
+    tms <- seq(min(begin)+dtm, max(end), by = dtm)
+  }
+
+  pars_eval <- format_pars(pars, ncmpt = ncmpt)
+  if(ncmpt == 4){
+    pred <- pksol3cptm(tms, pars_eval, begin, end, infs, init)
+  }
+
+  # Return predicted concentrations
+  if(dim(pred)[1] == 1) {
+    predtms <- cbind(tms, c(pred))
+  } else{
+    predtms <- cbind(tms, t.default(pred))
+  }
+
+  # Add on t=0 concentrations
+  if(return_init) predtms <- rbind(c(inf[1,"begin"], init), predtms)
+
+  # # remove transition concentrations
+  if(!is.null(tms) & remove_bounds){
+    predtms <- matrix(predtms[which(predtms[,1] %in% tms),],
+                      nrow = length(tms), byrow = FALSE)
+  }
+
+  colnames(predtms) <- c("time",paste0("c",1:length(init)))
+  return(predtms)
+}
+
+
+
 #' Plot object with class 'pkmod'
 #'
 #' Will show predicted concentrations in compartments associated with an infusion schedule.
@@ -126,18 +207,17 @@ predict.pkmod <- function(object, ..., inf, tms = NULL, dtm = 1/6, return_init =
 #' @param ... Arguments passed on to predict.pkmod
 #' @param inf An infusion schedule object with columns "begin","end","infrt".
 #' @param npts Number of points used to evaluate predicted concentrations.
-#' @return Returns a ggplot2 object displaying concentrations over time associated
-#' with object x with class 'pkmod'.
+#'
 #' @rdname plot
 #' @export
 plot.pkmod <- function(x, ..., inf, npts = 1000, title = NULL){
 
-  value <- variable <- time <- NULL
+  value <- variable <- NULL
 
   # set dtm based on range between points
   dtm <- diff(range(inf[,"begin"], inf[,"end"])) / npts
   # predict concentrations
-  con <- data.frame(predict.pkmod(x, inf = inf, dtm = dtm, return_init = TRUE, ...))
+  con <- data.frame(predict(x, inf = inf, dtm = dtm, return_init = TRUE, ...))
 
   colnames(con) <- gsub("^c", "Cmpt", colnames(con))
   ggplot2::ggplot(reshape::melt(con, id = "time"),
@@ -172,22 +252,21 @@ plot.pkmod <- function(x, ..., inf, npts = 1000, title = NULL){
 #' @param title Title of plot
 #' @param ecmpt Effect-site compartment number. Defaults to the last
 #' compartment concentration returned by pkmod.
-#' @return Returns a ggplot2 object displaying responses and optional concentrations
-#' over time associated with object x with class 'pkmod'.
+#'
 #' @rdname plot
 #' @export
 plot.pdmod <- function(x, ..., pkmod, inf, pars_pd, pars_pk = NULL, npts = 1000,
                        plot_pk = TRUE, title = NULL, ecmpt = NULL){
 
-  value <- variable <- pdresp <- time <- NULL
+  value <- variable <- pdresp <- NULL
 
   # set dtm based on range between points
   dtm <- diff(range(inf[,"begin"], inf[,"end"])) / npts
   # predict concentrations
   if(is.null(pars_pk)){
-    con <- data.frame(predict.pkmod(pkmod, inf = inf, dtm = dtm, return_init = TRUE, ...))
+    con <- data.frame(predict(pkmod, inf = inf, dtm = dtm, return_init = TRUE, ...))
   } else{
-    con <- data.frame(predict.pkmod(pkmod, inf = inf, dtm = dtm, return_init = TRUE, pars = pars_pk, ...))
+    con <- data.frame(predict(pkmod, inf = inf, dtm = dtm, return_init = TRUE, pars = pars_pk, ...))
   }
 
   # effect site compartment
@@ -228,16 +307,15 @@ plot.pdmod <- function(x, ..., pkmod, inf, pars_pd, pars_pk = NULL, npts = 1000,
 
 
 #' Plotting method for tciinf objects. Will work for outputs from "iterate_tci_grid" or "tci_pd".
-#' Note: the TCI target function is left-continuous. Consequently, it plots
-#' final target value plotted will be a repetition of the preceding value
+#' Note: the tci targets function is left-continous. Consequently, it plots
+#' final target value plotted will be a repetition of the preceeding value
 #'
 #' @param x Object with class "tciinf" created by functions
 #' `iterate_tci_grid` or `tci_pd`
 #' @param ... \dots
 #' @param title Title of plot.
 #' @param display Logical. Should plots be printed or returned as an arrangeGrob object?
-#' @return Returns a gridExtra grob object displaying responses and concentrations
-#' over time associated with an infusion schedule with class 'tciinf'.
+#'
 #' @rdname plot
 #' @export
 plot.tciinf <- function(x, ..., title = NULL, display = TRUE){
@@ -293,11 +371,9 @@ plot.tciinf <- function(x, ..., title = NULL, display = TRUE){
   }
 
   if("pdresp_start" %in% names(tciinf)){
-    # gridExtra::grid.arrange(ppd, ppk, nrow = 2, top = title)
     gb <- gridExtra::arrangeGrob(ppd, ppk, nrow = 2, top = title)
   } else{
-    # gridExtra::grid.arrange(ppk, top = title)
-    gb <- gridExtra::arrangeGrob(ppk, top = title)
+    gb <- ppk + ggplot2::ggtitle(title)
   }
 
   if(display){
@@ -316,8 +392,7 @@ plot.tciinf <- function(x, ..., title = NULL, display = TRUE){
 #' @param pk_ix Indicies of parameter vector(s) corresponding to PK parameters
 #' @param pd_ix Indicies of parameter vector(s) corresponding to PD parameters
 #' @param ... \dots
-#' @return Returns a ggplot2 plot displaying simulated results from an object with
-#' class 'datasim'.
+#'
 #' @rdname plot
 #' @importFrom ggplot2 aes
 #' @export
@@ -327,7 +402,7 @@ plot.datasim <- function(x, ..., pars_prior = NULL, pars_post = NULL, pk_ix = NU
     stop("pk_ix and pd_ix must be specified if pars_prior or pars_post are non-null")
 
   # initialize for CRAN check -- will be created by other functions
-  c1 <- variable <- cobs <- pdp <- pdobs <- time <- NULL
+  c1 <- variable <- cobs <- pdp <- pdobs <- NULL
 
   datasim <- x
   datasim$sim <- as.data.frame(datasim$sim)
@@ -336,11 +411,11 @@ plot.datasim <- function(x, ..., pars_prior = NULL, pars_post = NULL, pk_ix = NU
   tms <- seq(r[1], r[2], length.out = 1000)
 
   # predict concentrations at true parameter values
-  cp <- data.frame(predict.pkmod(datasim$pkmod,
-                                 inf = datasim$inf,
-                                 tms = tms,
-                                 pars = datasim$pars_pk0,
-                                 init = datasim$init))
+  cp <- data.frame(predict(datasim$pkmod,
+                           inf = datasim$inf,
+                           tms = tms,
+                           pars = datasim$pars_pk0,
+                           init = datasim$init))
 
   if(!is.null(datasim$pdmod)){
     cp$pdp <- datasim$pdmod(ce = cp[,paste0("c",datasim$ecmpt)],
@@ -350,7 +425,7 @@ plot.datasim <- function(x, ..., pars_prior = NULL, pars_post = NULL, pk_ix = NU
 
   # predict concentrations at prior parameters, if specified
   if(!is.null(pars_prior)){
-    cp_prior <- data.frame(predict.pkmod(datasim$pkmod,
+    cp_prior <- data.frame(predict(datasim$pkmod,
                                    inf = datasim$inf,
                                    tms = tms,
                                    pars = pars_prior[pk_ix],
@@ -369,7 +444,7 @@ plot.datasim <- function(x, ..., pars_prior = NULL, pars_post = NULL, pk_ix = NU
 
   # predict concentrations at posterior parameters, if specified
   if(!is.null(pars_post)){
-    cp_post <- data.frame(predict.pkmod(datasim$pkmod,
+    cp_post <- data.frame(predict(datasim$pkmod,
                                   inf = datasim$inf,
                                   tms = tms,
                                   pars = pars_post[pk_ix],
@@ -433,7 +508,6 @@ plot.datasim <- function(x, ..., pars_prior = NULL, pars_post = NULL, pk_ix = NU
       ggplot2::theme(legend.position="bottom")
   }
 
-
   return(out)
 }
 
@@ -444,8 +518,7 @@ plot.datasim <- function(x, ..., pars_prior = NULL, pars_post = NULL, pk_ix = NU
 #'
 #' @param x Object returned from "bayes_control" function
 #' @param ... \dots
-#' @return Returns a ggplot2 plot displaying results stored in a object
-#' with class 'bayessim'.
+#'
 #' @rdname plot
 #' @importFrom ggplot2 aes
 #' @export

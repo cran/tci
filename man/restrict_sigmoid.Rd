@@ -17,15 +17,11 @@ restrict_sigmoid(t50, tfinal = 10, eps = 1, BIS0 = 100, BISfinal = 50 - eps)
 
 \item{BISfinal}{asymptote of Emax model}
 }
-\value{
-Returns a numeric vector of Emax sigmoidal parameters restricted to pass through
-point (tfinal, BISfinal+eps).
-}
 \description{
 Function to place restriction on gamma and E50 parameters of target sigmoid
 such that it passes through point (tfinal, BISfinal+eps)
 }
 \examples{
-dose <- data.frame(time = c(0.5,4,4.5,10), infrt = c(100,0,100,0))
-create_intvl(dose)
+pars <- c(V1 = 8.9, CL = 1.4, q2 = 0.9, v2 = 18)
+format_pars(pars, ncmpt = 2)
 }

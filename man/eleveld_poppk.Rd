@@ -18,16 +18,8 @@ Defaults to FALSE}
 \item{rand}{Logical. Should a vector of Monte Carlo samples be returned instead
 of point estimates at patient covariate values. Defaults to FALSE.}
 }
-\value{
-Returns the original data frame with columns added corresponding to patient PK-PD parameter values.
-}
 \description{
-Function to generate PK-PD parameters for the Eleveld et al. (2018) PK-PD model.
-Function takes a data frame of patient covariate values with variable names
-"AGE","PMA","WGT","HGT","M1F2","TECH",and "A1V2" and returns PK parameter values. PK-PD values
-are generated at the point estimates for each patient (i.e. based on covariates alone) by default;
-however, random sets of parameter values can be drawn through Monte Carlo simulation based on
-the random effect/population variance terms described in Eleveld et al.
+Function takes a data frame of patient covariate values with variable names "AGE","PMA","WGT","HGT","M1F2","TECH",and "A1V2" and returns PK parameter values.
 }
 \examples{
 dat <- data.frame(AGE  = c(20,40,65),

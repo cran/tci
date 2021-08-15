@@ -21,8 +21,6 @@
 #'
 #' @param dose Data frame with columns "time" and "infrt".
 #' @param inittm Starting time of initial infusion
-#' @return Returns a matrix of infusions with columns "infrt", "begin", and "end"
-#' indicating infusion rates and corresponding begin and end times, respectively.
 #' @export
 create_intvl <- function(dose, inittm = 0){
   if(!all(c("time","infrt") %in% colnames(dose)))
@@ -37,6 +35,72 @@ create_intvl <- function(dose, inittm = 0){
 #' create_intvl(dose)
 
 
+#' @name format_pars
+#' @title Format parameters for use in Rcpp functions
+#'
+#' Order parameters for 1-4 compartment models to be used in Rcpp functions in
+#' predict.pkmod method.
+#'
+#' @param pars Vector of named parameters. Names can be capitalized or lowercase
+#' and can include variations of "V1" as "V" or clearance terms rather than
+#' elimination rate constants.
+#' @param ncmpt Number of compartments in the model. This should be a value
+#' between 1 and 4. If ncmpt = 4, it assumes that the fourth compartment is an
+#' effect-site without a corresponding volume parameter.
+#' @export
+format_pars <- function(pars, ncmpt = 3){
+
+  names(pars) <- tolower(names(pars))
+
+  if("v" %in% names(pars)){
+    v1 <- pars["v"]
+  } else{
+    v1 <- pars["v1"]
+  }
+  if("cl" %in% names(pars)){
+    k10 <- pars["cl"]/v1
+  } else{
+    k10 <- pars["k10"]
+  }
+  if(ncmpt >= 2){
+    v2 <- pars["v2"]
+    if("q2" %in% names(pars)){
+      k12 = pars["q2"]/v1
+      k21 = pars["q2"]/v2
+    } else{
+      k12 = pars["k12"]
+      k21 = pars["k21"]
+    }
+  }
+  if(ncmpt >= 3){
+    v3 <- pars["v3"]
+    if("q3" %in% names(pars)){
+      k13 = pars["q3"]/v1
+      k31 = pars["q3"]/v3
+    } else{
+      k13 = pars["k13"]
+      k31 = pars["k31"]
+    }
+  }
+
+  if(ncmpt >= 3){
+    pars_out <- c(k10,k12,k21,k13,k31,v1,v2,v3)
+  } else if(ncmpt == 2){
+    pars_out <- c(k10,k12,k21,v1,v2)
+  } else{
+    pars_out <- c(k10,v1)
+  }
+
+  if("ke0" %in% names(pars)){
+    pars_out <- c(pars_out, pars["ke0"])
+  }
+  return(pars_out)
+}
+#' @examples
+#' pars <- c(V1 = 8.9, CL = 1.4, q2 = 0.9, v2 = 18)
+#' format_pars(pars, ncmpt = 2)
+
+
 
 #' @name restrict_sigmoid
 #' @title Restrict target sigmoid values
@@ -48,8 +112,6 @@ create_intvl <- function(dose, inittm = 0){
 #' @param eps distance between BISfinal and the target function at tfinal
 #' @param BIS0 starting BIS value
 #' @param BISfinal asymptote of Emax model
-#' @return Returns a numeric vector of Emax sigmoidal parameters restricted to pass through
-#' point (tfinal, BISfinal+eps).
 #' @export
 restrict_sigmoid <- function(t50, tfinal =10, eps = 1, BIS0 = 100, BISfinal = 50-eps){
   gamma <- log((BIS0-BISfinal)/eps - 1, base = tfinal/t50)
@@ -66,8 +128,7 @@ restrict_sigmoid <- function(t50, tfinal =10, eps = 1, BIS0 = 100, BISfinal = 50
 #' @param N Number of Monte Carlo samples
 #' @param rates Logical. Should rate constants be calculated
 #' @param varnames Column names of variables used to calculate variance-covariance matrix
-#' @return Returns a variance-covariance matrix as a numeric matrix.
-#' @importFrom stats cov
+#'
 #' @export
 eleveld_vcov <- function(dat,
                          N = 1000,
@@ -106,7 +167,6 @@ eleveld_vcov <- function(dat,
 #'
 #' @param x Vector or data frame with Eleveld PK-PD model parameters
 #' @param pd Logical. Should PD parameters be returned in addition to PK parameters.
-#' @return Returns a numeric vector.
 #' @export
 elvdlpars <- function(x, pd = TRUE){
 
@@ -129,7 +189,6 @@ elvdlpars <- function(x, pd = TRUE){
 #' Set default PK parameter values for a pkmod object.
 #' @param pkmod pkmod object
 #' @param pars PK parameters to assign as default values of pkmod
-#' @return Returns a "pkmod" object with default parameters set to "pars'.
 #' @export
 assign_pars <- function(pkmod, pars){
 

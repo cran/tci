@@ -50,10 +50,6 @@ gen_data(
 
 \item{min_pdval}{Minimum PD value}
 }
-\value{
-Returns a list of simulated responses with class 'datasim' corresponding to the infusion schedule provided.
-A "plot.datasim" method exists for visualizing results.
-}
 \description{
 Function to simulate data from a specified PK or PK-PD model with a specified infusion schedule.
 }

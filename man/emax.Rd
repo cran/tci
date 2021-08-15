@@ -11,9 +11,6 @@ emax(ce, pars)
 
 \item{pars}{Named vector of parameter values with names (c50,gamma,e0,emx).}
 }
-\value{
-Returns a numeric vector of predictions from a 4-parameter Emax model.
-}
 \description{
 Emax function. c50 is the concentration eliciting a 50% effect, gamma is the hill parameter
 identifying the slope of the Emax curve at c50, E0 is the response value with no drug present,

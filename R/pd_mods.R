@@ -10,15 +10,17 @@
 #' Emx is the maximum effect size.
 #' @param ce Vector of effect-site concentrations.
 #' @param pars Named vector of parameter values with names (c50,gamma,e0,emx).
-#' @return Returns a numeric vector of predictions from a 4-parameter Emax model.
 #' @examples
 #' pars_emax <- c(c50 = 1.5, gamma = 1.47, e0 = 100, emx = 100)
 #' ce_seq <- seq(0,4,0.1)
 #' plot(ce_seq, emax(ce_seq, pars_emax), type = "l",
 #' xlab = "Effect-site concentrtion (ug/mL)", ylab = "BIS")
 #' @export
-emax <- function(ce, pars)
+emax <- function(ce, pars){
+  names(pars) <- tolower(names(pars))
+  if("ce50" %in% names(pars)) names(pars)[names(pars) == "ce50"] <- "c50"
   pars["e0"] - pars["emx"]*(ce^pars["gamma"] / (ce^pars["gamma"] + pars["c50"]^pars["gamma"]))
+}
 class(emax) <- "pdmod"
 
 
@@ -27,14 +29,14 @@ class(emax) <- "pdmod"
 #' @description Inverse Emax function to return effect-site concentrations required to reach target effect.
 #' @param pdresp PD response values
 #' @param pars Named vector of parameter values with names (c50,gamma,E0,Emx).
-#' @return Returns a numeric vector of effect-site concentrations corresponding to responses
-#' from a 4-parameter Emax model.
 #' @examples
 #' pars_emax <- c(c50 = 1.5, gamma = 4, e0 = 100, emx = 100)
 #' ce_seq <- seq(0,4,0.1)
 #' all.equal(inv_emax(emax(ce_seq, pars_emax), pars_emax), ce_seq)
 #' @export
 inv_emax <- function(pdresp, pars){
+  names(pars) <- tolower(names(pars))
+  if("ce50" %in% names(pars)) names(pars)[names(pars) == "ce50"] <- "c50"
   eff <- abs(pdresp - pars["e0"])
   (eff*(pars["c50"]^pars["gamma"])/(pars["emx"]*(1-eff/pars["emx"])))^(1/pars["gamma"])
 }
@@ -45,11 +47,7 @@ inv_emax <- function(pdresp, pars){
 #' @description The parameter gamma takes one of two values depending on whether ce <= c50.
 #'
 #' @param ce Vector of effect-site concentrations.
-#' @param pars A vector of parameter values of length 5 corresponding to parameters
-#' (c50,gamma,gamma2,E0,Emx). 'c50' describes the concentration required for 50% effect, 'gamma'
-#' and 'gamma2' are the Hill parameter for concentrations before and after c50, respectively,
-#' 'e0' is the response value at a concentration of 0 and 'emx' is the maximum change in response.
-#' @return Returns a numeric vector of predictions from the Emax model used by Eleveld et al. (2018).
+#' @param pars Vector of parameter values in order (c50,gamma,gamma2,e0,emx).
 #' @examples
 #' pars_emax_eleveld <- c(c50 = 1.5, gamma = 1.47, gamma2 = 1.89, e0 = 100, emx = 100)
 #' ce_seq <- seq(0,4,0.1)
@@ -72,15 +70,9 @@ class(emax_eleveld) <- "pdmod"
 
 #' @name inv_emax_eleveld
 #' @title Inverse Emax function
-#' @description Inverse of Emax function used by Eleveld et al. (2018) population PK model.
-#' The Emax function has five parameters: the
+#' @description Inverse of Emax function used by Eleveld population PK model.
 #' @param pdresp PD response values
-#' @param pars A vector of parameter values of length 5 corresponding to parameters
-#' (c50,gamma,gamma2,E0,Emx). 'c50' describes the concentration required for 50% effect, 'gamma'
-#' and 'gamma2' are the Hill parameter for concentrations before and after c50, respectively,
-#' 'e0' is the response value at a concentration of 0 and 'emx' is the maximum change in response.
-#' @return Returns a numeric vector of effect-site concentrations calculated by inverting
-#' the Emax model used by Eleveld et al. (2018).
+#' @param pars Named vector of parameter values with names (c50,gamma,E0,Emx).
 #' @examples
 #' pars_emax_eleveld <- c(c50 = 1.5, gamma = 1.47, gamma2 = 1.89, e0 = 100, emx = 100)
 #' ce_seq <- seq(0,4,0.1)
@@ -100,7 +92,6 @@ inv_emax_eleveld <- function(pdresp, pars){
 
   (eff*(c50^gam)/(emx*(1-eff/emx)))^(1/gam)
 }
-
 
 
 

@@ -62,22 +62,6 @@ compartment concentration returned by pkmod.}
 
 \item{pd_ix}{Indicies of parameter vector(s) corresponding to PD parameters}
 }
-\value{
-Returns a ggplot2 object displaying concentrations over time associated
-with object x with class 'pkmod'.
-
-Returns a ggplot2 object displaying responses and optional concentrations
-over time associated with object x with class 'pkmod'.
-
-Returns a gridExtra grob object displaying responses and concentrations
-over time associated with an infusion schedule with class 'tciinf'.
-
-Returns a ggplot2 plot displaying simulated results from an object with
-class 'datasim'.
-
-Returns a ggplot2 plot displaying results stored in a object
-with class 'bayessim'.
-}
 \description{
 Will show predicted concentrations in compartments associated with an infusion schedule.
 

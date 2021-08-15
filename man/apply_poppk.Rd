@@ -14,11 +14,6 @@ names used by model "mod"}
 
 \item{...}{Arguments passed on to population PK model.}
 }
-\value{
-The function applies either the Marsh (1991), Schnider et al. (1998), or Eleveld et al (2018) PK models for
-propofol to a dataframe with patient covariate values and returns PK (or PK-PD, in the case of the Eleveld model)
-parameter values. The function returns the original dataframe merged with parameter values for each individual (in rows).
-}
 \description{
 Function to apply saved population PK or PK-PD models to a
 data frame of patient values.

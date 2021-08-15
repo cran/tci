@@ -9,10 +9,6 @@ combine_sim(...)
 \arguments{
 \item{...}{Set of datasim objects created from `gen_data` function.}
 }
-\value{
-Return a list of merged data simulation objects, each with class 'datasim'.
-The resulting list also retains class 'datasim'. A "plot.datasim" method exists for visualizing results.
-}
 \description{
 Function to merge objects with class datasim from different infusion schedules
 infusion schedules can be passed directly in or as a list.

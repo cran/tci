@@ -16,10 +16,6 @@ the last "FALSE" update.}
 
 \item{plot_progress}{Vector of logical values. Should values be plotted at each update?}
 }
-\value{
-Returns a data frame with columns "time", "full_data", and "plot_progress"
-that are used as simulation parameters in the "bayes_control" function.
-}
 \description{
 Set parameters for closed-loop updates.
 }

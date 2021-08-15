@@ -19,11 +19,6 @@ pkmod2cpt(tm, kR, pars, init = c(0, 0), inittm = 0, k20 = 0)
 
 \item{k20}{Elimination rate constant for second compartment. Defaults to 0.}
 }
-\value{
-Returns a numeric matrix with predicted concentrations
-for a two-compartment model with IV infusion. Compartments are represented in
-rows while times are in columns.
-}
 \description{
 Two compartment IV infusion with first-order elimination.
 }

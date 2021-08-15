@@ -2,18 +2,7 @@
 % Please edit documentation in R/simulations.R
 \name{apply_targetfn}
 \alias{apply_targetfn}
-\title{#' Sigmoid target function
-#'
-#' @param lpars Logged parameter values
-#' @param tms Times to evaluate sigmoid function
-#' @param bis0 BIS value with no drug administered
-#' @param ... Arguments passed on to 'restrict_sigmoid' function
-#' @return Returns numeric vector of BIS values corresponding to an Emax sigmoidal
-#' target function with parameter bis0.
-#' @export
-sigmoid_targetfn <- function(lpars, tms, bis0 = 93, ...)
-  emax(tms, restrict_sigmoid(t50 = exp(lpars), BIS0 = bis0, ...))
-Apply target function to a PK-PD model}
+\title{Apply target function to a PK-PD model}
 \usage{
 apply_targetfn(
   lp,
@@ -46,12 +35,7 @@ apply_targetfn(
 
 \item{...}{Additional arguments passed on to tci_pd}
 }
-\value{
-Return a set of infusions designed to reach a target function
-specified in argument 'targetfn'.
-}
 \description{
 Function to apply any specified target function to a PK-PD model
-and TCI algorithm. 'targetfn' should be a function with parameters
-'lp' as the first argument and times 'tm' as the second.
+and TCI algorithm.
 }
