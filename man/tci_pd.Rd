@@ -27,6 +27,15 @@ to the last compartment.}
 \item{...}{Arguments to be passed on to 'tci'. These can include alternate
 TCI algorithms if desired.}
 }
+\value{
+Matrix of infusions with class "tciinf" calculated to reach PD targets.
+}
 \description{
 Function to extend TCI grid to a set of PD targets
+}
+\examples{
+tci_pd(pdresp = c(80,70,70), tms = c(2,4,6), pkmod = pkmod2cpt, pdmod = emax,
+pars_pk = c(CL = 15, V1 = 10, Q2 = 10, V2 = 20),
+pars_pd = c(c50 = 1.5, gamma = 1.47, e0 = 100, emx = 100),
+pdinv = inv_emax)
 }

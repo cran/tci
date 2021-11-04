@@ -21,6 +21,7 @@ pal  <- c(black = "#020201",
 #' Function to extract the last element from a vector or the last column from a matrix
 #'
 #' @param x Vector or matrix
+#' @return Numeric value if x is a vector, numeric vector if x is a matrix
 #' @export
 tail_vec <- function(x){
 
@@ -109,6 +110,7 @@ tail_vec <- function(x){
 #' @param from sequence starting value
 #' @param to sequence end value
 #' @param by increment of the sequence
+#' @return Numeric vector
 #' @export
 seqby <- function(from, to, by)
   sort(union(seq(from, to, by), c(from, to)))

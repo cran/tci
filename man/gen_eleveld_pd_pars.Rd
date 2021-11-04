@@ -13,6 +13,10 @@ gen_eleveld_pd_pars(theta, eta, patient_vars)
 
 \item{patient_vars}{Named list of observed patient characteristics}
 }
+\value{
+Numeric vector of PD parameters for Eleveld propofol model associated
+with a set of patient covariates.
+}
 \description{
 Function to generate PD parameters for Eleveld model.
 }
@@ -23,7 +27,6 @@ eleveld_theta_pd_est <- c(3.08,0.146,93.0,1.47,8.03,0.0517,-0.00635,1.24,1.89)
 eleveld_eta_pd_var <- c(0.242,0.702,0.230)
 patient_covariates <- subset(eleveld_pd, ID == 403,
 select = c("AGE","WGT","HGT","M1F2","PMA","TECH","A1V2"))
-eta_obs <- c(mvtnorm::rmvnorm(1,sigma = diag(eleveld_eta_pd_var)))
 gen_eleveld_pd_pars(theta = eleveld_theta_pd_est,
                     eta = eleveld_eta_pd_var,
                     patient_vars = patient_covariates)

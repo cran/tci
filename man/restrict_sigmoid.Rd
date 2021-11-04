@@ -17,6 +17,9 @@ restrict_sigmoid(t50, tfinal = 10, eps = 1, BIS0 = 100, BISfinal = 50 - eps)
 
 \item{BISfinal}{asymptote of Emax model}
 }
+\value{
+Numeric vector of PD parameter values
+}
 \description{
 Function to place restriction on gamma and E50 parameters of target sigmoid
 such that it passes through point (tfinal, BISfinal+eps)

@@ -19,9 +19,12 @@ pkmod2cpt(tm, kR, pars, init = c(0, 0), inittm = 0, k20 = 0)
 
 \item{k20}{Elimination rate constant for second compartment. Defaults to 0.}
 }
+\value{
+Numeric matrix of concentrations for a constant infusion rate
+}
 \description{
 Two compartment IV infusion with first-order elimination.
 }
 \examples{
-pkmod2cpt(1,1,c(CL = 15, V1 = 10, Q = 10, V2 = 20))
+pkmod2cpt(1,1,c(CL = 15, V1 = 10, Q2 = 10, V2 = 20))
 }

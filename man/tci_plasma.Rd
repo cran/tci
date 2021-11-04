@@ -21,6 +21,12 @@ existing TCI pumps (e.g. Anestfusor TCI program).}
 
 \item{...}{Arguments passed on to pkmod.}
 }
+\value{
+Numeric value
+}
 \description{
 TCI algorithm based on the algorithm described by Jacobs (1990).
+}
+\examples{
+tci_plasma(Cpt = 2, pkmod = pkmod1cpt, dtm = 1, pars = c(k10 = 0.5, v1 = 1))
 }

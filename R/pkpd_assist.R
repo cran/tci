@@ -21,6 +21,7 @@
 #'
 #' @param dose Data frame with columns "time" and "infrt".
 #' @param inittm Starting time of initial infusion
+#' @return Matrix of infusion rates, start and end times.
 #' @export
 create_intvl <- function(dose, inittm = 0){
   if(!all(c("time","infrt") %in% colnames(dose)))
@@ -39,7 +40,7 @@ create_intvl <- function(dose, inittm = 0){
 #' @title Format parameters for use in Rcpp functions
 #'
 #' Order parameters for 1-4 compartment models to be used in Rcpp functions in
-#' predict.pkmod method.
+#' predict_pkmod method.
 #'
 #' @param pars Vector of named parameters. Names can be capitalized or lowercase
 #' and can include variations of "V1" as "V" or clearance terms rather than
@@ -47,6 +48,7 @@ create_intvl <- function(dose, inittm = 0){
 #' @param ncmpt Number of compartments in the model. This should be a value
 #' between 1 and 4. If ncmpt = 4, it assumes that the fourth compartment is an
 #' effect-site without a corresponding volume parameter.
+#' @return Numeric vector of transformed parameter values.
 #' @export
 format_pars <- function(pars, ncmpt = 3){
 
@@ -84,11 +86,14 @@ format_pars <- function(pars, ncmpt = 3){
   }
 
   if(ncmpt >= 3){
-    pars_out <- c(k10,k12,k21,k13,k31,v1,v2,v3)
+    pars_out <- unname(c(k10,k12,k21,k13,k31,v1,v2,v3))
+    names(pars_out) <- c("k10","k12","k21","k13","k31","v1","v2","v3")
   } else if(ncmpt == 2){
-    pars_out <- c(k10,k12,k21,v1,v2)
+    pars_out <- unname(c(k10,k12,k21,v1,v2))
+    names(pars_out) <- c("k10","k12","k21","v1","v2")
   } else{
-    pars_out <- c(k10,v1)
+    pars_out <- unname(c(k10,v1))
+    names(pars_out) <- c("k10","v1")
   }
 
   if("ke0" %in% names(pars)){
@@ -112,6 +117,7 @@ format_pars <- function(pars, ncmpt = 3){
 #' @param eps distance between BISfinal and the target function at tfinal
 #' @param BIS0 starting BIS value
 #' @param BISfinal asymptote of Emax model
+#' @return Numeric vector of PD parameter values
 #' @export
 restrict_sigmoid <- function(t50, tfinal =10, eps = 1, BIS0 = 100, BISfinal = 50-eps){
   gamma <- log((BIS0-BISfinal)/eps - 1, base = tfinal/t50)
@@ -128,7 +134,7 @@ restrict_sigmoid <- function(t50, tfinal =10, eps = 1, BIS0 = 100, BISfinal = 50
 #' @param N Number of Monte Carlo samples
 #' @param rates Logical. Should rate constants be calculated
 #' @param varnames Column names of variables used to calculate variance-covariance matrix
-#'
+#' @return List of variance-covariance matrices with length equal to the number of rows in dat.
 #' @export
 eleveld_vcov <- function(dat,
                          N = 1000,
@@ -167,6 +173,7 @@ eleveld_vcov <- function(dat,
 #'
 #' @param x Vector or data frame with Eleveld PK-PD model parameters
 #' @param pd Logical. Should PD parameters be returned in addition to PK parameters.
+#' @return List of parameters used by Eleveld PK-PD model.
 #' @export
 elvdlpars <- function(x, pd = TRUE){
 
@@ -189,6 +196,7 @@ elvdlpars <- function(x, pd = TRUE){
 #' Set default PK parameter values for a pkmod object.
 #' @param pkmod pkmod object
 #' @param pars PK parameters to assign as default values of pkmod
+#' @return pkmod object
 #' @export
 assign_pars <- function(pkmod, pars){
 

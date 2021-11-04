@@ -11,6 +11,9 @@ emax_eleveld(ce, pars)
 
 \item{pars}{Vector of parameter values in order (c50,gamma,gamma2,e0,emx).}
 }
+\value{
+Numeric vector of same length as ce.
+}
 \description{
 The parameter gamma takes one of two values depending on whether ce <= c50.
 }

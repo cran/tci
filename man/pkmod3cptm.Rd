@@ -27,6 +27,9 @@ pkmod3cptm(
 \item{returncpt}{Optionally specify a single compartment to return concentrations for.
 Defaults to returning all compartment concentrations.}
 }
+\value{
+Numeric matrix of concentrations for a constant infusion rate
+}
 \description{
 3 compartment IV infusion with first-order absorption between compartments and with an additional effect-site compartment.
 The analytical solutions implemented in this function are provided in "ADVAN-style analytical solutions for common pharmacokinetic models" by

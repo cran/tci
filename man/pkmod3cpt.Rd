@@ -21,6 +21,9 @@ pkmod3cpt(tm, kR, pars, init = c(0, 0, 0), inittm = 0, k20 = 0, k30 = 0)
 
 \item{k30}{Elimination rate constant for second compartment. Defaults to 0.}
 }
+\value{
+Numeric matrix of concentrations for a constant infusion rate
+}
 \description{
 Three compartment IV infusion with first-order elimination.
 }

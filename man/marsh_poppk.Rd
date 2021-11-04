@@ -16,6 +16,9 @@ mass in kg.}
 \item{rate}{Logical. Should elimination rate constants be returned instead
 of clearance parameters.}
 }
+\value{
+data.frame with covariate-based PK parameter estimates based on Marsh propofol model.
+}
 \description{
 Takes in a vector of patient weights and returns a data frame of patient PK-PD parameters.
 KE0 parameter set to 1.2 in accordance with recommendations

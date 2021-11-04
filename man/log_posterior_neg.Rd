@@ -17,6 +17,9 @@ log_posterior_neg(lpr, dat, mu, sig, ...)
 
 \item{...}{Arguments passed on to log-likelihood.}
 }
+\value{
+Numeric vector of negative log-posterior values
+}
 \description{
 Function to evaluate the negative log posterior given a set of logged parameter values and observed BIS values.
 }

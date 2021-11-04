@@ -9,6 +9,9 @@ combine_sim(...)
 \arguments{
 \item{...}{Set of datasim objects created from `gen_data` function.}
 }
+\value{
+List with class "datasim"
+}
 \description{
 Function to merge objects with class datasim from different infusion schedules
 infusion schedules can be passed directly in or as a list.

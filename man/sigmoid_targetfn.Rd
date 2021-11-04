@@ -15,6 +15,9 @@ sigmoid_targetfn(lpars, tms, bis0 = 93, ...)
 
 \item{...}{Arguments passed on to 'restrict_sigmoid' function}
 }
+\value{
+Numeric vector of PD values.
+}
 \description{
 Sigmoid target function
 }

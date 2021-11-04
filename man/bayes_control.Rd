@@ -54,6 +54,9 @@ made at fixed intervals specified by 'dtm'.}
 
 \item{print_progress}{Logical. Should current update times be printed to the console.}
 }
+\value{
+list with class "bayessim" containing results of closed-loop simulation.
+}
 \description{
 Function to provide Bayesian closed-loop control.
 }

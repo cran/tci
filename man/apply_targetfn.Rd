@@ -35,6 +35,9 @@ apply_targetfn(
 
 \item{...}{Additional arguments passed on to tci_pd}
 }
+\value{
+matrix with class "tciinf".
+}
 \description{
 Function to apply any specified target function to a PK-PD model
 and TCI algorithm.

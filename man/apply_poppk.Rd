@@ -14,6 +14,9 @@ names used by model "mod"}
 
 \item{...}{Arguments passed on to population PK model.}
 }
+\value{
+data.frame of predicted PK parameters
+}
 \description{
 Function to apply saved population PK or PK-PD models to a
 data frame of patient values.

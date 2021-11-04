@@ -35,8 +35,14 @@ Can be increased for more precision.}
 
 \item{...}{Arguments used by pkmod.}
 }
+\value{
+Numeric value
+}
 \description{
 Function for calculating a TCI infusion schedule corresponding to a set of target concentrations.
 This function makes use of formulas described by Shafer and Gregg (1992) in "Algorithms to rapidly achieve
 and maintain stable drug concentrations at the site of drug effect with a computer-controlled infusion pump"
+}
+\examples{
+tci_effect(Cet = 2, pkmod = pkmod2cpt, dtm = 1, pars = c(CL = 15, V1 = 10, Q2 = 10, V2 = 20))
 }

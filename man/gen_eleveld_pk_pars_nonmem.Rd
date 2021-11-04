@@ -15,6 +15,10 @@ gen_eleveld_pk_pars_nonmem(THETA, ETA, PATIENT_VARS, returnQ = FALSE)
 
 \item{returnQ}{Optional logical value to indicate if clearance values should be returned instead of elimination rate constants.}
 }
+\value{
+Numeric vector of PK parameters for Eleveld propofol model associated
+with a set of patient covariates.
+}
 \description{
 R code adapted from NONMEM PK file provided in supplementary material of Eleveld et al. Function takes in fixed effect
 parameter estimates and random effect variance estimates to return parameters for a 3 compartment pk model with an

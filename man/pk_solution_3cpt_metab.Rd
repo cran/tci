@@ -14,6 +14,9 @@ pk_solution_3cpt_metab(pars, ivt, init)
 
 \item{init}{inital concentrations for the 4 compartments.}
 }
+\value{
+Numeric matrix of concentrations for a set of infusions
+}
 \description{
 This function extends the function pk_basic_solution_3cpt_metab to a specified infusion schedule, rather than a single
 infusion.

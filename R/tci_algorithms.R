@@ -14,7 +14,9 @@
 #' existing TCI pumps (e.g. Anestfusor TCI program).
 #' @param cmpt Compartment into which infusions are administered. Defaults to the first compartment.
 #' @param ... Arguments passed on to pkmod.
-#'
+#' @return Numeric value
+#' @examples
+#' tci_plasma(Cpt = 2, pkmod = pkmod1cpt, dtm = 1, pars = c(k10 = 0.5, v1 = 1))
 #' @export
 tci_plasma <- function(Cpt, pkmod, dtm, maxrt = 1200, cmpt = 1, ...){
 
@@ -56,6 +58,9 @@ tci_plasma <- function(Cpt, pkmod, dtm, maxrt = 1200, cmpt = 1, ...){
 #' @param grid_len Number of time points used to identify time of maximum concentration.
 #' Can be increased for more precision.
 #' @param ... Arguments used by pkmod.
+#' @return Numeric value
+#' @examples
+#' tci_effect(Cet = 2, pkmod = pkmod2cpt, dtm = 1, pars = c(CL = 15, V1 = 10, Q2 = 10, V2 = 20))
 #' @export
 tci_effect <- function(Cet, pkmod, dtm = 1/6, ecmpt = NULL, tmax_search = 10,
                         maxrt = 1200, grid_len = 1200, ...){
@@ -76,11 +81,11 @@ tci_effect <- function(Cet, pkmod, dtm = 1/6, ecmpt = NULL, tmax_search = 10,
 
   # predict concentrations with no additional infusions and starting concentrations
   B <- function(tm)
-    predict(pkmod, inf = null_inf, pars = pars, init = init, tms = tm)[,ecmpt_name]
+    predict_pkmod(pkmod, inf = null_inf, pars = pars, init = init, tms = tm)[,ecmpt_name]
 
   # predict concentrations with unit infusion and no starting concentrations
   E <- function(tm)
-    predict(pkmod, inf = unit_inf, pars = pars, init = rep(0,length(init)), tms = tm)[,ecmpt_name]
+    predict_pkmod(pkmod, inf = unit_inf, pars = pars, init = rep(0,length(init)), tms = tm)[,ecmpt_name]
 
   # predict to find the longest time of maximum concentration
   # this will always be shorter when any prior drug has been infused
@@ -95,7 +100,6 @@ tci_effect <- function(Cet, pkmod, dtm = 1/6, ecmpt = NULL, tmax_search = 10,
   }
 
   peak_ix <- min(which(diff(con_proj) < 0))
-# peak_ix <- which.max(con_proj)
 
   if(all(init == 0)){
     kR <- Cet / con_proj[peak_ix]
@@ -140,15 +144,19 @@ tci_effect <- function(Cet, pkmod, dtm = 1/6, ecmpt = NULL, tmax_search = 10,
 #' @param cetol Percentage of effect-site concentration required to be within to switch
 #' to plasma targeting.
 #' @param cp_cmpt Position of central compartment. Defaults to first compartment.
-#' @param ce_cmpt Position of effect-site compartment. Defaults to fourth compartment.
+#' @param ce_cmpt Position of effect-site compartment. Defaults to last compartment.
 #' @param ... Arguments passed on to 'tci_plasma' and 'tci_effect' functions.
-#'
+#' @return Numeric value
+#' @examples
+#' tci_comb(Ct = 2, pkmod = pkmod2cpt, dtm = 1, pars = c(CL = 15, V1 = 10, Q2 = 10, V2 = 20))
 #' @export
-tci_comb <- function(Ct, pkmod, cptol = 0.2, cetol = 0.05, cp_cmpt = 1, ce_cmpt = 4, ...){
+tci_comb <- function(Ct, pkmod, cptol = 0.2, cetol = 0.05, cp_cmpt = NULL, ce_cmpt = NULL, ...){
 
   list2env(list(...), envir = environment())
 
   if(!("init" %in% ls())) init <- eval(formals(pkmod)$init)
+  if(is.null(cp_cmpt)) cp_cmpt <- 1
+  if(is.null(ce_cmpt)) ce_cmpt <- length(init)
 
   if(Ct <= init[ce_cmpt])
     return(0)
@@ -188,6 +196,9 @@ tci_comb <- function(Ct, pkmod, cptol = 0.2, cetol = 0.05, cp_cmpt = 1, ce_cmpt 
 #' reach the target.
 #' @param dtm Time difference between infusion rate updates.
 #' @param ... Arguments passed on to TCI algorithm.
+#' @return Matrix of infusions with class "tciinf" calculated to reach Ct targets.
+#' @examples
+#' tci(Ct = c(2,3,4), tms = c(1,2,3), pkmod = pkmod2cpt, pars = c(CL = 15, V1 = 10, Q2 = 10, V2 = 20))
 #' @export
 tci <- function(Ct, tms, pkmod, pars, init = NULL,
                              tci_alg = c("effect","plasma"),
@@ -254,7 +265,12 @@ tci <- function(Ct, tms, pkmod, pars, init = NULL,
 #' to the last compartment.
 #' @param ... Arguments to be passed on to 'tci'. These can include alternate
 #' TCI algorithms if desired.
-#'
+#' @return Matrix of infusions with class "tciinf" calculated to reach PD targets.
+#' @examples
+#' tci_pd(pdresp = c(80,70,70), tms = c(2,4,6), pkmod = pkmod2cpt, pdmod = emax,
+#' pars_pk = c(CL = 15, V1 = 10, Q2 = 10, V2 = 20),
+#' pars_pd = c(c50 = 1.5, gamma = 1.47, e0 = 100, emx = 100),
+#' pdinv = inv_emax)
 #' @export
 tci_pd <- function(pdresp, tms, pkmod, pdmod, pars_pk, pars_pd, pdinv,
                    ecmpt = NULL, ...){

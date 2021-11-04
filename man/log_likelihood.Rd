@@ -20,6 +20,9 @@ assumed to be the residual error term.}
 
 \item{fixed_lpr}{values used by PD function that are not updated.}
 }
+\value{
+Numeric vector of log-likelihood values
+}
 \description{
 Function to evaluate the log likelihood given a set of logged parameter values and a set of observed BIS values.
 It is assumed that the full set of parameters are given by indices (pk_ix, pd_ix), of which a subset may be

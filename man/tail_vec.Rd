@@ -9,6 +9,9 @@ tail_vec(x)
 \arguments{
 \item{x}{Vector or matrix}
 }
+\value{
+Numeric value if x is a vector, numeric vector if x is a matrix
+}
 \description{
 Function to extract the last element from a vector or the last column from a matrix
 }

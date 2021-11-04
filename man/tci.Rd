@@ -40,6 +40,9 @@ reach the target.}
 
 \item{...}{Arguments passed on to TCI algorithm.}
 }
+\value{
+Matrix of infusions with class "tciinf" calculated to reach Ct targets.
+}
 \description{
 Function to iterate any arbitrary TCI algorithm to a series of points. By default,
 the function will update infusion rates at fixed intervals (e.g. every 10 seconds);
@@ -50,4 +53,7 @@ the prior target has been obtained.
 The user passes the `iterate_tci` function a matrix of target concentrations and times
 at which the target is set. This is translated into a step function that defines the
 concentration target at all times.
+}
+\examples{
+tci(Ct = c(2,3,4), tms = c(1,2,3), pkmod = pkmod2cpt, pars = c(CL = 15, V1 = 10, Q2 = 10, V2 = 20))
 }

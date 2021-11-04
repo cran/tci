@@ -11,6 +11,9 @@ cl_targets(time, target)
 
 \item{target}{Response target values}
 }
+\value{
+data.frame with columns "time" and "target".
+}
 \description{
 Format data frame of closed-loop targets.
 }

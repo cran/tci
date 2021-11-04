@@ -6,27 +6,28 @@
 #'
 #' @param tm Vector of times to evaluate the PK function at
 #' @param kR Infusion rate (e.g. ml/min).
-#' @param pars Named vector of parameters with names ('ke','v') or ('cl').
+#' @param pars Named vector of parameters with names ('k10','v1') or ('cl','v1').
 #' @param init Initial concentration. Defaults to 0.
 #' @param inittm Time of initiation of infusion. Defaults to 0.
 #' @examples
-#' pkmod1cpt(1,1,c(ke = 0.5, v = 1))
+#' pkmod1cpt(1,1,c(k10 = 0.5, v1 = 1))
+#' @return Numeric vector of concentrations for a constant infusion rate
 #' @export
 pkmod1cpt <- function(tm, kR, pars, init = 0, inittm = 0){
 
   names(pars) <- tolower(names(pars))
   tm <- tm - inittm
 
-  if(any(!(c("ke","v") %in% names(pars))) & any(!(c("cl","v") %in% names(pars))))
-    stop("pars must have names ('ke','v') or ('cl','v')")
+  if(any(!(c("k10","v1") %in% names(pars))) & any(!(c("cl","v1") %in% names(pars))))
+    stop("pars must have names ('k10','v1') or ('cl','v1')")
 
-  v <- pars["v"]
-  if(!("ke" %in% names(pars)))
-    ke <- pars["cl"] / v
+  v1 <- pars["v1"]
+  if(!("k10" %in% names(pars)))
+    k10 <- pars["cl"] / v1
   else
-    ke <- pars["ke"]
+    k10 <- pars["k10"]
 
-  return((kR/ke*(1-exp(-tm*ke)) + init*v * exp(-tm*ke)) / v)
+  return((kR/k10*(1-exp(-tm*k10)) + init*v1 * exp(-tm*k10)) / v1)
 }
 class(pkmod1cpt) <- "pkmod"
 
@@ -42,22 +43,23 @@ class(pkmod1cpt) <- "pkmod"
 #' @param inittm Time of initiation of infusion. Defaults to 0.
 #' @param k20 Elimination rate constant for second compartment. Defaults to 0.
 #' @examples
-#' pkmod2cpt(1,1,c(CL = 15, V1 = 10, Q = 10, V2 = 20))
+#' pkmod2cpt(1,1,c(CL = 15, V1 = 10, Q2 = 10, V2 = 20))
+#' @return Numeric matrix of concentrations for a constant infusion rate
 #' @export
 pkmod2cpt <- function(tm, kR, pars, init = c(0,0), inittm = 0, k20 = 0){
 
   names(pars) <- tolower(names(pars))
   tm <- tm - inittm
 
-  if(any(!(c("k10","k12","k21","v1","v2") %in% names(pars))) & any(!(c("cl","q","v1","v2") %in% names(pars))))
-    stop("pars must have names ('k10','k12','k21','v1','v2') or ('cl','q','v1','v2')")
+  if(any(!(c("k10","k12","k21","v1","v2") %in% names(pars))) & any(!(c("cl","q2","v1","v2") %in% names(pars))))
+    stop("pars must have names ('k10','k12','k21','v1','v2') or ('cl','q2','v1','v2')")
 
   v1 <- pars["v1"]
   v2 <- pars["v2"]
-  if(all(c("cl","q") %in% names(pars))){
+  if(all(c("cl","q2") %in% names(pars))){
     k10 <- pars["cl"] / v1
-    k12 <- pars["q"] / v1
-    k21 <- pars["q"] / v2
+    k12 <- pars["q2"] / v1
+    k21 <- pars["q2"] / v2
   } else{
     k10 <- pars["k10"]
     k12 <- pars["k12"]
@@ -100,6 +102,7 @@ class(pkmod2cpt) <- "pkmod"
 #' @param k30 Elimination rate constant for second compartment. Defaults to 0.
 #' @examples
 #' pkmod3cpt(1,1,c(CL = 15, Q2 = 10, Q3 = 5, V1 = 10, V2 = 20, V3 = 50))
+#' @return Numeric matrix of concentrations for a constant infusion rate
 #' @export
 pkmod3cpt <- function(tm, kR, pars, init = c(0,0,0), inittm = 0, k20 = 0, k30 = 0){
 
@@ -202,6 +205,7 @@ class(pkmod3cpt) <- "pkmod"
 #' @examples
 #' pars_3cpt <- c(k10=1.5,k12=0.15,k21=0.09,k13=0.8,k31=0.8,v1=10,v2=15,v3=100,ke0=1)
 #' pkmod3cptm(1,1,pars_3cpt)
+#' @return Numeric matrix of concentrations for a constant infusion rate
 #' @export
 pkmod3cptm <- function(tm, kR, pars, init = c(0,0,0,0), inittm = 0,
                        returncpt = c("all","cpt1","cpt2","cpt3","cpt4")) {
@@ -367,6 +371,7 @@ class(pkmod3cptm) <- "pkmod"
 #' # concentration in central and effect site compartments
 #' tms <- seq(0,1,0.1)
 #' cbind(sol$c_1(tms), sol$c_4(tms))
+#' @return Numeric matrix of concentrations for a constant infusion rate
 #' @export
 pk_basic_solution_3cpt_metab <- function(kR,k10,k12,k21,k13,k31,v1,v2,v3,ke0,
                                          c0=c(0,0,0,0))
@@ -481,6 +486,7 @@ pk_basic_solution_3cpt_metab <- function(kR,k10,k12,k21,k13,k31,v1,v2,v3,ke0,
 #' init <- c(0,0,0,0)
 #' sol <- pk_solution_3cpt_metab(pars, ivt, init)
 #' sol(seq(0,32))
+#' @return Numeric matrix of concentrations for a set of infusions
 #' @export
 pk_solution_3cpt_metab <- function(pars, ivt, init)
 {
@@ -556,6 +562,7 @@ pk_solution_3cpt_metab <- function(pars, ivt, init)
 #' @param init Inital concentrations for the 4 compartments.
 #' @param ce_only Logical. Should only the effect-site concentration be returned.
 #' Defaults to FALSE
+#' @return Numeric matrix of concentrations for a three-compartment metabolite model
 #' @examples
 #' data(eleveld_pk)
 #' data(eleveld_pd)
@@ -626,6 +633,8 @@ pk_solution_3cpt_metab_singleinf <- function(pars, ivt, init, ce_only = FALSE){
 #' @param theta Vector of fixed effects
 #' @param eta Vector of random effects
 #' @param patient_vars Named list of observed patient characteristics
+#' @return Numeric vector of PD parameters for Eleveld propofol model associated
+#' with a set of patient covariates.
 #' @examples
 #' data(eleveld_pd)
 #' # PD fixed effect values and random effect variances from Eleveld et al. (2018)
@@ -633,7 +642,6 @@ pk_solution_3cpt_metab_singleinf <- function(pars, ivt, init, ce_only = FALSE){
 #' eleveld_eta_pd_var <- c(0.242,0.702,0.230)
 #' patient_covariates <- subset(eleveld_pd, ID == 403,
 #' select = c("AGE","WGT","HGT","M1F2","PMA","TECH","A1V2"))
-#' eta_obs <- c(mvtnorm::rmvnorm(1,sigma = diag(eleveld_eta_pd_var)))
 #' gen_eleveld_pd_pars(theta = eleveld_theta_pd_est,
 #'                     eta = eleveld_eta_pd_var,
 #'                     patient_vars = patient_covariates)
@@ -663,7 +671,8 @@ gen_eleveld_pd_pars <- function(theta, eta, patient_vars){
 #' @param eta Vector of random effects
 #' @param patient_vars Named list of observed patient characteristics
 #' @param returnQ Logical. Should clearance be returned instead of rates
-#'
+#' @return Numeric vector of PK parameters for Eleveld propofol model associated
+#' with a set of patient covariates.
 #' @examples
 #' data(eleveld_pk)
 #' # PK fixed effect values and random effect variances from Eleveld et al. (2018)
@@ -755,6 +764,8 @@ gen_eleveld_pk_pars <- function(theta, eta, patient_vars, returnQ = FALSE){
 #' @param ETA Vector of random effect variances
 #' @param PATIENT_VARS Named list of patient covariate values
 #' @param returnQ Optional logical value to indicate if clearance values should be returned instead of elimination rate constants.
+#' @return Numeric vector of PK parameters for Eleveld propofol model associated
+#' with a set of patient covariates.
 #' @examples
 #' data(eleveld_pk)
 #'
@@ -865,8 +876,227 @@ gen_eleveld_pk_pars_nonmem <- function(THETA, ETA, PATIENT_VARS, returnQ = FALSE
 
 
 
+#' Predict concentrations from a pkmod object - can be a user defined function
+#'
+#' Apply a PK model piecewise to infusion schedule
+#' @param object An object with class pkmod.
+#' @param ... Arguments passed on to pkmod
+#' @param inf An infusion schedule object with columns "begin","end","infrt".
+#' @param tms Times to evaluate predictions at. Will default to a sequence
+#' spanning the infusions at intervals of dtm.
+#' @param dtm Interval used for prediction if argument tms is unspecified.
+#' @param return_init Logical indicating if concentrations at time 0 should
+#' be returned. Defaults to FALSE.
+#' @param remove_bounds Logical, indicating if concentrations calculated at
+#' changes in infusion rates should be returned if not included in prediction
+#' times. Defaults to TRUE, so that only concentrations at specified times
+#' are returned.
+#' @return Matrix of predicted concentrations associated with a pkmod object and
+#' and infusion schedule.
+#' @export
+predict_pkmod <- function(object, ..., inf, tms = NULL, dtm = 1/6, return_init = FALSE,
+                          remove_bounds = TRUE){
+
+  if(class(object) != "pkmod") stop("Object must have class 'pkmod'")
+
+  ## apply Rcpp implementation to selected PK models
+  if(any(identical(object, pkmod1cpt),
+         identical(object, pkmod2cpt),
+         identical(object, pkmod3cpt),
+         identical(object, pkmod3cptm))){
+    return(predict_pkmod_Rcpp(object = object, ... = ..., inf = inf, tms = tms,
+                              dtm = dtm, return_init = return_init,
+                              remove_bounds = remove_bounds))
+  }
+
+  fptol = 1e-10
+  tm_digits = 7
+
+  if(!all(c("infrt","begin","end") %in% colnames(inf)))
+    stop("inf must include 'infrt','begin','end' as column names")
+
+  dot.args <- list(...)
+
+  if(!("init" %in% names(formals(object))))
+    stop("object must contain argument 'init'")
+
+  if(!("pars" %in% names(dot.args)) &
+     is.symbol(formals(object)$pars))
+    stop("PK parameters must be passed as 'pars' within predict or set
+         as defaults in PK model object")
+
+  # Times to evaluate concentrations at. Defaults to a sequence of values at intervals of dtm.
+  if(!is.null(tms)){
+    # round times - this is needed to prevent errors associated with rounding numeric values
+    tms <- round(tms, tm_digits)
+    # if times are provided, predict at those times plus boundaries for initial values
+    bnd <- sort(unique(
+      round(as.numeric(unlist(inf[,c("begin","end")])),tm_digits)
+    ))
+    tms_all <- sort(unique(
+      round(c(bnd,tms),tm_digits)
+    ))
+    tms_eval <- split(tms_all, findInterval(tms_all, bnd,
+                                            rightmost.closed = TRUE,
+                                            left.open = TRUE))
+  } else{
+    # if times are not provided, predict across a grid of points
+    tms_eval <- mapply(seq, inf[,"begin"]+dtm, inf[,"end"], by = dtm,
+                       SIMPLIFY = FALSE)
+    tms_all <- unlist(tms_eval)
+  }
+
+  init <- vector("list", nrow(inf)+1)
+
+  # Pass on initial concentrations to first element of init. Use values if specified, else defaults.
+  if("init" %in% names(dot.args)){
+    init[[1]] <- unlist(dot.args$init)
+    dot.args$init <- NULL
+  } else {
+    init[[1]] <- eval(formals(object)$init)
+  }
+
+  if("pars" %in% names(dot.args)){
+    pars <- unlist(dot.args$pars)
+    dot.args$pars <- NULL
+  } else {
+    pars <- eval(formals(object)$pars)
+  }
+
+  # get indexes of times and initialize matrix for predictions
+  tm_ix <- lapply(tms_eval, function(x) match(x,tms_all))
+  ncmpt <- length(eval(formals(object)$init))
+  pred <- matrix(NA, nrow = ncmpt, ncol = length(tms_all))
+
+  # Predict concentrations and store initial values.
+  for(i in 1:nrow(inf)){
+    pred[,tm_ix[[i]]] <- do.call("object", c(list(tm = tms_eval[[i]],
+                                                  kR = inf[i,"infrt"],
+                                                  pars = pars,
+                                                  init = init[[i]],
+                                                  inittm = inf[i,"begin"]),
+                                             dot.args))
+    init[[i+1]] <- pred[,length(unlist(tm_ix[1:i]))]
+  }
+
+  # Replace any negative values
+  pred[pred<0] <- 0
+
+  # Return predicted concentrations
+  if(dim(pred)[1] == 1) {
+    predtms <- cbind(unique(unlist(tms_eval)), c(pred))
+  } else{
+    predtms <- cbind(unique(unlist(tms_eval)), t.default(pred))
+  }
+
+  # Add on t=0 concentrations
+  if(return_init) predtms <- rbind(c(inf[1,"begin"], init[[1]]), predtms)
+
+  # # remove transition concentrations
+  if(!is.null(tms) & remove_bounds){
+    predtms <- matrix(predtms[which(predtms[,1] %in% tms),],
+                      nrow = length(tms), byrow = FALSE)
+  }
+
+  colnames(predtms) <- c("time",paste0("c",1:length(init[[1]])))
+  return(predtms)
+}
 
 
+
+#' Predict concentrations from a pkmod object using Rcpp implementations
+#'
+#' predict method to apply pk model piecewise to infusion schedule
+#' @param object An object with class pkmod.
+#' @param ... Arguments passed on to pkmod
+#' @param inf An infusion schedule object with columns "begin","end","infrt".
+#' @param tms Times to evaluate predictions at. Will default to a sequence
+#' spanning the infusions at intervals of dtm.
+#' @param dtm Interval used for prediction if argument tms is unspecified.
+#' @param return_init Logical indicating if concentrations at time 0 should
+#' be returned. Defaults to FALSE.
+#' @param remove_bounds Logical, indicating if concentrations calculated at
+#' changes in infusion rates should be returned if not included in prediction
+#' times. Defaults to TRUE, so that only concentrations at specified times
+#' are returned.
+#' @return Matrix of predicted concentrations associated with a pkmod object and
+#' and infusion schedule.
+#' @export
+predict_pkmod_Rcpp <- function(object, ..., inf, tms = NULL, dtm = 1/6, return_init = FALSE,
+                               remove_bounds = TRUE){
+
+  ncmpt <- NA
+  if(!all(c("infrt","begin","end") %in% colnames(inf)))
+    stop("inf must include 'infrt','begin','end' as column names")
+
+  dot.args <- list(...)
+
+  if(!("init" %in% names(formals(object))))
+    stop("object must contain argument 'init'")
+
+  if(!("pars" %in% names(dot.args)) &
+     is.symbol(formals(object)$pars))
+    stop("PK parameters must be passed as 'pars' within predict or set
+         as defaults in PK model object")
+
+  if("init" %in% names(dot.args)){
+    init <- unlist(dot.args$init)
+  } else {
+    init <- eval(formals(object)$init)
+  }
+  if("pars" %in% names(dot.args)){
+    pars <- unlist(dot.args$pars)
+    dot.args$pars <- NULL
+  } else {
+    pars <- eval(formals(object)$pars)
+  }
+
+  begin <- inf[,"begin"]
+  end <- inf[,"end"]
+  infs <- inf[,"infrt"]
+  ncmpt <- length(init)
+
+  if(is.null(tms)){
+    tms <- seq(min(begin)+dtm, max(end), by = dtm)
+  }
+
+  # evaluate times starting from the first infusion
+  tms_eval <- tms - min(begin)
+  # inf[i,"begin"]
+
+  pars_eval <- format_pars(pars, ncmpt = ncmpt)
+  if(ncmpt == 1){
+    pred <- t.default(pksol1cpt(tms, pars_eval, begin, end, infs, init))
+  }
+  if(ncmpt == 2){
+    pred <- pksol2cpt(tms, pars_eval, begin, end, infs, init)
+  }
+  if(ncmpt == 3){
+    pred <- pksol3cpt(tms, pars_eval, begin, end, infs, init)
+  }
+  if(ncmpt == 4){
+    pred <- pksol3cptm(tms, pars_eval, begin, end, infs, init)
+  }
+
+  # Return predicted concentrations
+  if(dim(pred)[1] == 1) {
+    predtms <- cbind(tms, c(pred))
+  } else{
+    predtms <- cbind(tms, t.default(pred))
+  }
+
+  # Add on t=0 concentrations
+  if(return_init) predtms <- rbind(c(inf[1,"begin"], init), predtms)
+
+  # # remove transition concentrations
+  if(!is.null(tms) & remove_bounds){
+    predtms <- matrix(predtms[which(predtms[,1] %in% tms),],
+                      nrow = length(tms), byrow = FALSE)
+  }
+
+  colnames(predtms) <- c("time",paste0("c",1:length(init)))
+  return(predtms)
+}
 
 
 

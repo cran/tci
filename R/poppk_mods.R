@@ -13,6 +13,7 @@
 #' mass in kg.
 #' @param rate Logical. Should elimination rate constants be returned instead
 #' of clearance parameters.
+#' @return data.frame with covariate-based PK parameter estimates based on Marsh propofol model.
 #' @export
 marsh_poppk <- function(df, rate = TRUE){
   if(!("TBM" %in% names(df))) stop('The data frame must have a column named "TBM"')
@@ -58,6 +59,7 @@ marsh_poppk <- function(df, rate = TRUE){
 #' Defaults to FALSE
 #' @param rand Logical. Should a vector of Monte Carlo samples be returned instead
 #' of point estimates at patient covariate values. Defaults to FALSE.
+#' @return data.frame with covariate-based PK parameter estimates based on Schnider propofol model.
 #' @export
 schnider_poppk <- function(df, rate = FALSE, rand = FALSE){
 
@@ -123,6 +125,7 @@ schnider_poppk <- function(df, rate = FALSE, rand = FALSE){
 #' Defaults to FALSE
 #' @param rand Logical. Should a vector of Monte Carlo samples be returned instead
 #' of point estimates at patient covariate values. Defaults to FALSE.
+#' @return data.frame with covariate-based PK parameter estimates based on Eleveld propofol model.
 #' @export
 eleveld_poppk <- function(df, PD = TRUE, rate = FALSE, rand = FALSE){
 

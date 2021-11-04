@@ -41,6 +41,9 @@ pk_basic_solution_3cpt_metab(
 
 \item{c0}{Initial concentrations. Defaults to 0 in each compartment.}
 }
+\value{
+Numeric matrix of concentrations for a constant infusion rate
+}
 \description{
 3 compartment IV infusion with first-order absorption between compartments and with an additional effect-site compartment.
 The analytical solutions implemented in this function are provided in "ADVAN-style analytical solutions for common pharmacokinetic models" by

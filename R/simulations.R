@@ -18,7 +18,7 @@
 #' @param max_pdval Maximum PD value.
 #' @param min_pdval Minimum PD value
 #' @import stats
-#'
+#' @return List with class "datasim"
 #' @export
 gen_data <- function(inf, pkmod, pars_pk0,
                      sigma_add = 0, sigma_mult = 0,
@@ -35,7 +35,7 @@ gen_data <- function(inf, pkmod, pars_pk0,
   if(is.null(init))
     init <- eval(formals(pkmod)$init)
 
-  con0 <- predict(object = pkmod, inf = inf, tms = tms, pars = pars_pk0, init = init)
+  con0 <- predict_pkmod(object = pkmod, inf = inf, tms = tms, pars = pars_pk0, init = init)
 
   # additive and multiplicative errors
   eadd  <- rnorm(nrow(con0),0,sigma_add)
@@ -94,7 +94,7 @@ gen_data <- function(inf, pkmod, pars_pk0,
 #' Function to merge objects with class datasim from different infusion schedules
 #' infusion schedules can be passed directly in or as a list.
 #' @param ... Set of datasim objects created from `gen_data` function.
-#'
+#' @return List with class "datasim"
 #' @export
 combine_sim <- function(...){
   simlist <- list(...)
@@ -133,6 +133,7 @@ combine_sim <- function(...){
 #' names used by model "mod"
 #' @param mod Population PK model to apply to rows of patient_df
 #' @param ... Arguments passed on to population PK model.
+#' @return data.frame of predicted PK parameters
 #' @export
 apply_poppk <- function(patient_df, mod = c("marsh","schnider","eleveld"), ...){
   switch(match.arg(mod),
@@ -152,7 +153,7 @@ apply_poppk <- function(patient_df, mod = c("marsh","schnider","eleveld"), ...){
 #' @param mu mean for model parameters and mean residual error
 #' @param sig variance covariance matrix for model parameters
 #' @importFrom mvtnorm dmvnorm
-#'
+#' @return Numeric vector of prior probabilities
 #' @export
 log_prior <- function(lpr, mu, sig){
   mvtnorm::dmvnorm(lpr, mu, sig, log = TRUE)
@@ -174,7 +175,7 @@ log_prior <- function(lpr, mu, sig){
 #' @param fixed_ix indices of (pars_pk,pars_pd) corresponding to PD function values
 #' @param fixed_lpr values used by PD function that are not updated.
 #' @importFrom truncnorm dtruncnorm
-#'
+#' @return Numeric vector of log-likelihood values
 #' @export
 log_likelihood <- function(lpr, dat, pk_ix, pd_ix, fixed_ix = NULL, fixed_lpr = NULL){
 
@@ -203,7 +204,7 @@ log_likelihood <- function(lpr, dat, pk_ix, pd_ix, fixed_ix = NULL, fixed_lpr = 
   ini <- dat$inf[1,grep("c[0-9]_start",colnames(dat$inf))]
 
   # predict concentrations at lpr
-  cp <- predict(dat$pkmod,
+  cp <- predict_pkmod(dat$pkmod,
                 inf = dat$inf,
                 tms = tms,
                 pars = epars[pk_ix],
@@ -240,7 +241,7 @@ log_likelihood <- function(lpr, dat, pk_ix, pd_ix, fixed_ix = NULL, fixed_lpr = 
 #   ini <- dat$inf[1,grep("c[0-9]_start",colnames(dat$inf))]
 #
 #   # predict concentrations at lpr
-#   cp <- predict(dat$pkmod,
+#   cp <- predict_pkmod(dat$pkmod,
 #                 inf = dat$inf,
 #                 tms = tms,
 #                 pars = exp(lpr[pk_ix]),
@@ -264,7 +265,7 @@ log_likelihood <- function(lpr, dat, pk_ix, pd_ix, fixed_ix = NULL, fixed_lpr = 
 #' @param mu Mean of prior distribution.
 #' @param sig Variance-covariance matrix of prior distribution.
 #' @param ... Arguments passed on to log-likelihood.
-#'
+#' @return Numeric vector of negative log-posterior values
 #' @export
 log_posterior_neg <- function(lpr, dat, mu, sig, ...) {
     -1*(log_prior(lpr,mu,sig) + log_likelihood(lpr, dat, ...))
@@ -276,7 +277,7 @@ log_posterior_neg <- function(lpr, dat, mu, sig, ...) {
 #' Format data frame of closed-loop targets.
 #' @param time Times at which target values are set
 #' @param target Response target values
-#'
+#' @return data.frame with columns "time" and "target".
 #' @export
 cl_targets <- function(time, target){
   data.frame(time = time, target = target)
@@ -293,7 +294,7 @@ cl_targets <- function(time, target){
 #' covariance matrix is overwritten. Consequently, any "TRUE" updates will only use data since
 #' the last "FALSE" update.
 #' @param plot_progress Vector of logical values. Should values be plotted at each update?
-#'
+#' @return data.frame with columns "time", "full_data", and "plot_progress".
 #' @export
 cl_updates <- function(time, full_data = TRUE, plot_progress = FALSE){
   data.frame(time = time, full_data = full_data, plot_progress = plot_progress)
@@ -322,7 +323,7 @@ cl_updates <- function(time, full_data = TRUE, plot_progress = FALSE){
 #' @param sim_starttm Start time of simulation
 #' @param tci_alg TCI algorithm used. Defaults to effect-site targeting.
 #' @param print_progress Logical. Should current update times be printed to the console.
-#'
+#' @return list with class "bayessim" containing results of closed-loop simulation.
 #' @importFrom utils head tail
 #' @export
 bayes_control <- function(targets, updates, prior, true_pars,
@@ -475,7 +476,7 @@ bayes_control <- function(targets, updates, prior, true_pars,
 
     # update true and predicted initial values
     init0 <- dat0$sim[nrow(dat0$sim),grep("c[0-9]",colnames(dat0$sim))]
-    init_p <- as.numeric(predict(pkmod,
+    init_p <- as.numeric(predict_pkmod(pkmod,
                                  inf = dat0$inf,
                                  tms = update_tms[i],
                                  pars = prior$pars_pkpd[prior$pk_ix],
@@ -511,7 +512,7 @@ bayes_control <- function(targets, updates, prior, true_pars,
 #' @param tms Times to evaluate sigmoid function
 #' @param bis0 BIS value with no drug administered
 #' @param ... Arguments passed on to 'restrict_sigmoid' function
-#'
+#' @return Numeric vector of PD values.
 #' @export
 sigmoid_targetfn <- function(lpars, tms, bis0 = 93, ...)
   emax(tms, restrict_sigmoid(t50 = exp(lpars), BIS0 = bis0, ...))
@@ -542,7 +543,7 @@ sigmoid_targetfn <- function(lpars, tms, bis0 = 93, ...)
 #' @param pdmod PD model to evaluate
 #' @param pdinv Inverse PD model
 #' @param ... Additional arguments passed on to tci_pd
-#'
+#' @return matrix with class "tciinf".
 #' @export
 apply_targetfn <- function(lp, tm, targetfn, prior_pk, prior_pd,
                            pkmod = pkmod3cptm,
@@ -589,7 +590,7 @@ apply_targetfn <- function(lp, tm, targetfn, prior_pk, prior_pd,
 #   tms <- seq(dtm,rng[2],dtm)
 #
 #   # predict concentrations and responses
-#   con0 <- predict(pkmod = pkmod, inf = inf, tms = tms, pars = pars_pk0, init = init)
+#   con0 <- predict_pkmod(pkmod = pkmod, inf = inf, tms = tms, pars = pars_pk0, init = init)
 #   pd_pred <- pdmod(con0[,paste0("c",ecmpt)], pars_pd0)
 #
 #   phi1 <- sum((pd_pred[pd_pred>target] - target))*dtm # integral above target
@@ -622,7 +623,7 @@ apply_targetfn <- function(lp, tm, targetfn, prior_pk, prior_pd,
 #   tms <- seq(dtm,rng[2],dtm)
 #
 #   # predict concentrations and responses
-#   con0 <- predict(pkmod = pkmod, inf = inf, tms = tms,
+#   con0 <- predict_pkmod(pkmod = pkmod, inf = inf, tms = tms,
 #                   pars = pars_pk0, init = init)[,paste0("c",ecmpt)]
 #   pd_pred <- pdmod(con0, pars_pd0)
 #

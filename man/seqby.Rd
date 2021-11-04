@@ -13,6 +13,9 @@ seqby(from, to, by)
 
 \item{by}{increment of the sequence}
 }
+\value{
+Numeric vector
+}
 \description{
 Create a sequence between two values at regular intervals and include bounds in output.
 }

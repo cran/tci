@@ -18,6 +18,9 @@ Defaults to FALSE}
 \item{rand}{Logical. Should a vector of Monte Carlo samples be returned instead
 of point estimates at patient covariate values. Defaults to FALSE.}
 }
+\value{
+data.frame with covariate-based PK parameter estimates based on Eleveld propofol model.
+}
 \description{
 Function takes a data frame of patient covariate values with variable names "AGE","PMA","WGT","HGT","M1F2","TECH",and "A1V2" and returns PK parameter values.
 }

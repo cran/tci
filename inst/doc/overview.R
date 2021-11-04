@@ -31,10 +31,10 @@ pars_3cpt <- c(k10=1.5,k12=0.15,k21=0.09,k13=0.8,
 
 # predict concentrations of a three-compartment model with effect-site at
 # times 1, 2, 8 minutes
-predict(pkmod3cptm, 
-        pars = pars_3cpt,
-        inf = dose, 
-        tms = c(1,2,8))
+predict_pkmod(pkmod3cptm, 
+              pars = pars_3cpt,
+              inf = dose, 
+              tms = c(1,2,8))
 
 ## -----------------------------------------------------------------------------
 # plot concentrations

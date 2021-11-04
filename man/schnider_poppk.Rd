@@ -15,6 +15,9 @@ Defaults to FALSE}
 \item{rand}{Logical. Should a vector of Monte Carlo samples be returned instead
 of point estimates at patient covariate values. Defaults to FALSE.}
 }
+\value{
+data.frame with covariate-based PK parameter estimates based on Schnider propofol model.
+}
 \description{
 Evaluate Schnider population PK model at patient covariate values.
 }

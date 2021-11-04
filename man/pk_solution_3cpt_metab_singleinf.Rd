@@ -17,6 +17,9 @@ pk_solution_3cpt_metab_singleinf(pars, ivt, init, ce_only = FALSE)
 \item{ce_only}{Logical. Should only the effect-site concentration be returned.
 Defaults to FALSE}
 }
+\value{
+Numeric matrix of concentrations for a three-compartment metabolite model
+}
 \description{
 Piece-wise solution for a single infusion followed by a period with no infusion.
 This function is similar to pk_solution_3cpt_metab, except that it accepts and

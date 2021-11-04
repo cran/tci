@@ -15,6 +15,10 @@ gen_eleveld_pk_pars(theta, eta, patient_vars, returnQ = FALSE)
 
 \item{returnQ}{Logical. Should clearance be returned instead of rates}
 }
+\value{
+Numeric vector of PK parameters for Eleveld propofol model associated
+with a set of patient covariates.
+}
 \description{
 Function to generate PK parameters for Eleveld model.
 }
