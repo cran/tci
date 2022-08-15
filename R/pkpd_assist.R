@@ -2,38 +2,6 @@
 # - PK-PD model helper functions and methods -------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------------------------------------
 
-#' dosing schedule
-# create_intvl <- function(dose, inittm = 0){
-#   b <- cut2(dose$time +inittm, breaks = c(inittm,dose$time+inittm), include.lowest = TRUE, right = FALSE)
-#   ss <- t(sapply(stringr::str_extract_all(levels(b),"-?[0-9.]+"), as.numeric))
-#   setNames(data.frame(levels(b), dose$infrt, ss), c("intvl","infrt","begin","end"))
-#   # infm <- cbind(dose$infrt, ss)
-#   # dimnames(infm) = list(rep(NULL,nrow(ss)), c("infrt","begin","end"))
-#   # infm
-# }
-
-
-#' Create dosing schedule
-#'
-#' Create a dosing schedule object with columns "infrt", "begin", "end" from
-#' vectors of infusions and infusion end times. The argument "inittm" is used
-#' to specify the starting time of the first infusion.
-#'
-#' @param dose Data frame with columns "time" and "infrt".
-#' @param inittm Starting time of initial infusion
-#' @return Matrix of infusion rates, start and end times.
-#' @export
-create_intvl <- function(dose, inittm = 0){
-  if(!all(c("time","infrt") %in% colnames(dose)))
-    stop("dose must include columnnames 'time','infrt'")
-  tms <- c(inittm,dose[,"time"])
-  as.matrix(cbind(infrt = dose[,"infrt"],
-                  begin = tms[-length(tms)],
-                  end = tms[-1]))
-}
-#' @examples
-#' dose <- data.frame(time = c(0.5,4,4.5,10), infrt = c(100,0,100,0))
-#' create_intvl(dose)
 
 
 #' @name format_pars
@@ -49,6 +17,9 @@ create_intvl <- function(dose, inittm = 0){
 #' between 1 and 4. If ncmpt = 4, it assumes that the fourth compartment is an
 #' effect-site without a corresponding volume parameter.
 #' @return Numeric vector of transformed parameter values.
+#' @examples
+#' format_pars(c(V1 = 8.9, CL = 1.4, q2 = 0.9, v2 = 18), ncmpt = 2)
+#' format_pars(c(V1 = 8.9, CL = 1.4, q2 = 0.9, v2 = 18, cl2 = 3), ncmpt = 2)
 #' @export
 format_pars <- function(pars, ncmpt = 3){
 
@@ -61,18 +32,33 @@ format_pars <- function(pars, ncmpt = 3){
   }
   if("cl" %in% names(pars)){
     k10 <- pars["cl"]/v1
-  } else{
+  } else if("cl1" %in% names(pars)){
+    k10 <- pars["cl1"]/v1
+  } else if("ke" %in% names(pars))
+    k10 <- pars["ke"]
+  else{
     k10 <- pars["k10"]
   }
   if(ncmpt >= 2){
     v2 <- pars["v2"]
-    if("q2" %in% names(pars)){
+    if("q" %in% names(pars)){
+      k12 = pars["q"]/v1
+      k21 = pars["q"]/v2
+    } else if("q2" %in% names(pars)){
       k12 = pars["q2"]/v1
       k21 = pars["q2"]/v2
     } else{
       k12 = pars["k12"]
       k21 = pars["k21"]
     }
+
+    if("cl2" %in% names(pars)){
+      k20 = pars["cl2"]/v2
+    } else if("k20" %in% names(pars))
+      k20 = pars["k20"]
+    else
+      k20 = 0
+
   }
   if(ncmpt >= 3){
     v3 <- pars["v3"]
@@ -83,14 +69,21 @@ format_pars <- function(pars, ncmpt = 3){
       k13 = pars["k13"]
       k31 = pars["k31"]
     }
+
+    if("cl3" %in% names(pars)){
+      k30 = pars["cl3"]/v3
+    } else if("k30" %in% names(pars))
+      k30 = pars["k30"]
+    else
+      k30 = 0
   }
 
   if(ncmpt >= 3){
-    pars_out <- unname(c(k10,k12,k21,k13,k31,v1,v2,v3))
-    names(pars_out) <- c("k10","k12","k21","k13","k31","v1","v2","v3")
+    pars_out <- unname(c(k10,k20,k30,k12,k21,k13,k31,v1,v2,v3))
+    names(pars_out) <- c("k10","k20","k30","k12","k21","k13","k31","v1","v2","v3")
   } else if(ncmpt == 2){
-    pars_out <- unname(c(k10,k12,k21,v1,v2))
-    names(pars_out) <- c("k10","k12","k21","v1","v2")
+    pars_out <- unname(c(k10,k20,k12,k21,v1,v2))
+    names(pars_out) <- c("k10","k20","k12","k21","v1","v2")
   } else{
     pars_out <- unname(c(k10,v1))
     names(pars_out) <- c("k10","v1")
@@ -101,63 +94,122 @@ format_pars <- function(pars, ncmpt = 3){
   }
   return(pars_out)
 }
+
+
+#' @name infer_pkfn
+#' @title Identify pkfn from parameter names
+#' @description Identify structural PK model function (i.e., `pkfn`) from parameter names.
+#' Models available are 1-, 2-, and 3-compartment mammillary models, or 3-compartment with
+#' an effect site, corresponding to functions `pkmod1cpt`, `pkmod2cpt`, `pkmod3cpt`, and
+#' `pkmod3cptm`, respectively.
+#' @param parnms Vector of parameter names.
+#' @return Returns one of the following functions: `pkmod1cpt`, `pkmod2cpt`, `pkmod3cpt`,
+#' or `pkmod3cptm` based on the parameter names entered.
 #' @examples
-#' pars <- c(V1 = 8.9, CL = 1.4, q2 = 0.9, v2 = 18)
-#' format_pars(pars, ncmpt = 2)
-
-
-
-#' @name restrict_sigmoid
-#' @title Restrict target sigmoid values
-#' @description Function to place restriction on gamma and E50 parameters of target sigmoid
-#' such that it passes through point (tfinal, BISfinal+eps)
-#'
-#' @param t50 parameter of Emax model
-#' @param tfinal end of the induction period
-#' @param eps distance between BISfinal and the target function at tfinal
-#' @param BIS0 starting BIS value
-#' @param BISfinal asymptote of Emax model
-#' @return Numeric vector of PD parameter values
+#' # 1-compartment
+#' infer_pkfn(c("CL","V"))
+#' infer_pkfn(c("Cl","v1"))
+#' # 2-compartment
+#' infer_pkfn(c("CL","v","v2","q"))
+#' # 3-compartment
+#' infer_pkfn(c("CL","v","v2","q","Q2","V3"))
+#' # 3-compartment with effect-site
+#' infer_pkfn(c("CL","v","v2","q","Q2","V3","ke0"))
 #' @export
-restrict_sigmoid <- function(t50, tfinal =10, eps = 1, BIS0 = 100, BISfinal = 50-eps){
-  gamma <- log((BIS0-BISfinal)/eps - 1, base = tfinal/t50)
-  c(c50 = t50, gamma = gamma, e0 = BIS0, emx = BIS0 - BISfinal)
+infer_pkfn <- function(parnms){
+
+  parnms <- tolower(parnms)
+
+  if("ke0" %in% parnms)
+    return(pkmod3cptm)
+
+  if(any(c("v3","q3") %in% parnms))
+    return(pkmod3cpt)
+
+  if(any(c("v2","q2","q") %in% parnms))
+    return(pkmod2cpt)
+
+  if(any(c("cl","v","v1") %in% parnms))
+    return(pkmod1cpt)
+
+  warning("Could not infer pkfn from parameter names.")
 }
 
 
-#' Generate variance-covariance matrix for Eleveld PK-PD model
-#'
-#' Generate the variance-covariance matrix for Eleveld PK-PD model for an observation
-#' via Monte Carlo sampling.
-#'
-#' @param dat Data frame of observed patient covariates
-#' @param N Number of Monte Carlo samples
-#' @param rates Logical. Should rate constants be calculated
-#' @param varnames Column names of variables used to calculate variance-covariance matrix
-#' @return List of variance-covariance matrices with length equal to the number of rows in dat.
+
+#' @name list_parnms
+#' @title Identify pkfn from parameter names
+#' @description Identify structural PK model function (i.e., `pkfn`) from parameter names.
+#' Models available are 1-, 2-, and 3-compartment mammillary models, or 3-compartment with
+#' an effect site, corresponding to functions `pkmod1cpt`, `pkmod2cpt`, `pkmod3cpt`, and
+#' `pkmod3cptm`, respectively.
+#' @return Returns one of the following functions: `pkmod1cpt`, `pkmod2cpt`, `pkmod3cpt`,
+#' or `pkmod3cptm` based on the parameter names entered.
+#' @examples
+#' list_parnms()
 #' @export
-eleveld_vcov <- function(dat,
-                         N = 1000,
-                         rates = TRUE,
-                         varnames = c("K10","K12","K21","K13","K31","V1","V2","V3","KE0","CE50","SIGMA")){
-
-  if(rates){
-    varnames <- c("K10","K12","K21","K13","K31","V1","V2","V3","KE0","CE50","SIGMA")
-  } else{
-    varnames <- c("CL","Q2","Q3","V1","V2","V3","KE0","CE50","SIGMA")
-  }
-  vcv_list <- lapply(1:nrow(dat), function(i){
-    mc_samples <- replicate(N, log(unlist(
-      eleveld_poppk(dat[i,], rate = rates, PD = TRUE, rand = TRUE)[,varnames])
-    ))
-    vcv <- cov(t(mc_samples))
-    if(rcond(vcv) < 1e-5)
-      diag(vcv) <- diag(vcv) + 1e-3
-    round(vcv,5)
-  })
-
-  vcv_list
+list_parnms <- function(){
+  cat("Acceptable names for 'pars_pk' vector (case-insensitive)", "\n")
+  cat("\nFirst compartment options\n")
+  cat(" Central volume: 'v','v1'","\n")
+  cat(" Elimination: 'cl','cl1','k10','ke'","\n")
+  cat("\nSecond compartment options\n")
+  cat(" Peripheral volume: 'v2'","\n")
+  cat(" Transfer: 'q','q2','k12','k21'","\n")
+  cat(" Elimination: 'cl2','k20'","\n")
+  cat("\nThird compartment options\n")
+  cat(" Second peripheral volume: 'v3'","\n")
+  cat(" Transfer: 'q3','k13','k31'","\n")
+  cat(" Elimination: 'cl3','k30'","\n")
+  cat("\nEffect-site\n")
+  cat(" Elimination: 'ke0'")
 }
+
+
+#' @name list_pkmods
+#' @title Print population PK models available in `tci`
+#' @description Print population PK models available in `tci` for propofol (Marsh,
+#' Schnider, Eleveld) and remifentanil (Minto, Kim, Eleveld).
+#' @return Prints function names, model types, and required covariates for each
+#' model.
+#' @examples
+#' list_pkmods()
+#' @import knitr
+#' @export
+list_pkmods <- function(){
+  tab <- data.frame(`Population model` = c("Marsh","Schnider","Eleveld (propofol)",
+                              "Minto","Kim","Eleveld (remifentanil"),
+                    Function = c("pkmod_marsh()","pkmod_schnider()","pkmod_eleveld_ppf()",
+                                 "pkmod_minto()","pkmod_kim()","pkmod_eleveld_remi()"),
+                    Drug = rep(c("Propofol","Remifentanil"), each = 3),
+                    Type = c("PK","PK","PK/PKPD","PK/PKPD","PK","PK/PKPD"),
+                    `Required covariates` = c("TBW",
+                                              "(AGE, HGT, TBW, MALE) or (AGE, HGT, LBW)",
+                                   "AGE, HGT, MALE, TBW",
+                                   "(AGE, HGT, TBW, MALE) or (AGE, HGT, LBW)",
+                                   "(AGE, TBW, BMI, HGT) or (AGE, TBW, FFM)",
+                                   "(AGE, MALE, TBW, HGT) or (AGE, MALE, TBW, BMI)"))
+
+  knitr::kable(tab, format = "pipe")
+}
+
+
+# #' @name restrict_sigmoid
+# #' @title Restrict target sigmoid values
+# #' @description Function to place restriction on gamma and E50 parameters of target sigmoid
+# #' such that it passes through point (tfinal, BISfinal+eps)
+# #'
+# #' @param t50 parameter of Emax model
+# #' @param tfinal end of the induction period
+# #' @param eps distance between BISfinal and the target function at tfinal
+# #' @param BIS0 starting BIS value
+# #' @param BISfinal asymptote of Emax model
+# #' @return Numeric vector of PD parameter values
+# #' @export
+# restrict_sigmoid <- function(t50, tfinal =10, eps = 1, BIS0 = 100, BISfinal = 50-eps){
+#   gamma <- log((BIS0-BISfinal)/eps - 1, base = tfinal/t50)
+#   c(c50 = t50, gamma = gamma, e0 = BIS0, emx = BIS0 - BISfinal)
+# }
 
 
 # All parameters in the Eleveld model are log-normally distributed or constant within the population.
@@ -200,7 +252,7 @@ elvdlpars <- function(x, pd = TRUE){
 #' @export
 assign_pars <- function(pkmod, pars){
 
-  if(class(pkmod) != "pkmod")
+  if(!inherits(pkmod, "pkmod"))
     stop("Class of pkmod must be 'pkmod'")
   if(!("pars" %in% names(formals(pkmod))))
     stop("Object 'pkmod' must have argument 'pars'")

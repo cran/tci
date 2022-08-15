@@ -2,43 +2,47 @@
 # - TCI algorithms ---------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------------------------------------
 
+
 #' TCI algorithm for plasma targeting
 #'
 #' TCI algorithm based on the algorithm described by Jacobs (1990).
 #'
-#' @param Cpt Target plasma concentration
+#' @param Ct Target plasma concentration
 #' @param pkmod PK model
 #' @param dtm Duration of the infusion
 #' @param maxrt Maximum infusion rate. Defaults to 200 ml/min in reference to the
 #' maximum infusion rate of 1200 ml/h permitted by
 #' existing TCI pumps (e.g. Anestfusor TCI program).
-#' @param cmpt Compartment into which infusions are administered. Defaults to the first compartment.
-#' @param ... Arguments passed on to pkmod.
+#' @param ... Arguments passed on to update.pkmod.
 #' @return Numeric value
 #' @examples
-#' tci_plasma(Cpt = 2, pkmod = pkmod1cpt, dtm = 1, pars = c(k10 = 0.5, v1 = 1))
+#' # plasma targeting
+#' my_mod <- pkmod(pars_pk = c(CL = 10, V1 = 10))
+#' tci_plasma(Ct = 2, my_mod)
+#' # update CL parameter
+#' tci_plasma(Ct = 2, my_mod, pars_pk = c(CL = 15))
 #' @export
-tci_plasma <- function(Cpt, pkmod, dtm, maxrt = 1200, cmpt = 1, ...){
+tci_plasma <- function(Ct, pkmod, dtm = 1/6, maxrt = 1200, ...){
 
-  Cp1 <- pkmod(tm = dtm, kR = 1, ...)
-  Cp2 <- pkmod(tm = dtm, kR = 2, ...)
+  pkmod <- update(pkmod,...)
 
-  # for multi-compartment models, use only concentration in compartment 'cmpt'
+  Cp1 <- with(pkmod, pkfn(tm = dtm, kR = 1, pars = pars_pk, init = init))
+  Cp2 <- with(pkmod, pkfn(tm = dtm, kR = 2, pars = pars_pk, init = init))
+
   if(!is.null(dim(Cp1))){
-    Cp1 <- Cp1[cmpt,]
-    Cp2 <- Cp2[cmpt,]
+    Cp1 <- Cp1[pkmod$pcmpt,]
+    Cp2 <- Cp2[pkmod$pcmpt,]
   }
 
   m <- Cp2 - Cp1
   b <- Cp1 - m
-  infrt <- (Cpt - b) / m
-  if(infrt < 0)
-    infrt <- 0
-  if(infrt > maxrt)
-    infrt <- maxrt
-  return(unname(infrt))
+  inf_rate <- (Ct - b) / m
+  if(inf_rate < 0)
+    inf_rate <- 0
+  if(inf_rate > maxrt)
+    inf_rate <- maxrt
+  return(unname(inf_rate))
 }
-
 
 
 #' TCI algorithm for effect-site targeting
@@ -47,45 +51,43 @@ tci_plasma <- function(Cpt, pkmod, dtm, maxrt = 1200, cmpt = 1, ...){
 #' This function makes use of formulas described by Shafer and Gregg (1992) in "Algorithms to rapidly achieve
 #' and maintain stable drug concentrations at the site of drug effect with a computer-controlled infusion pump"
 #'
-#' @param Cet Numeric vector of target effect-site concentrations.
+#' @param Ct Numeric vector of target effect-site concentrations.
 #' @param pkmod PK model
 #' @param dtm Frequency of TCI updates. Default is 1/6 minutes = 10 seconds.
-#' @param ecmpt Effect site compartment number
 #' @param tmax_search Outer bound on times searched to find a maximum concentration
 #' following an infusion of duration dtm. Defaults to 20 minutes. May need to be increased
 #' if a drug has a slow elimination rate.
 #' @param maxrt Maximum infusion rate of TCI pump. Defaults to 1200.
 #' @param grid_len Number of time points used to identify time of maximum concentration.
 #' Can be increased for more precision.
-#' @param ... Arguments used by pkmod.
+#' @param ... List or vector of named values to be passed on to update.pkmod.
 #' @return Numeric value
 #' @examples
-#' tci_effect(Cet = 2, pkmod = pkmod2cpt, dtm = 1, pars = c(CL = 15, V1 = 10, Q2 = 10, V2 = 20))
+#' # three compartment model with effect site
+#' my_mod <- pkmod(pars_pk = c(v1 = 8.995, v2 = 17.297, v3 = 120.963,
+#' cl = 1.382, q2 = 0.919, q3 = 0.609, ke0 = 1.289))
+#' tci_effect_only(Ct = 2, pkmod = my_mod)
+#' # update parameters
+#' tci_effect_only(Ct = 2, pkmod = my_mod, pars_pk = c(v1 = 12, cl = 2))
 #' @export
-tci_effect <- function(Cet, pkmod, dtm = 1/6, ecmpt = NULL, tmax_search = 10,
-                        maxrt = 1200, grid_len = 1200, ...){
+tci_effect_only <- function(Ct, pkmod, dtm = 1/6, tmax_search = 10,
+                       maxrt = 1200, grid_len = 1200, ...){
 
-  list2env(list(...), envir = environment())
-  if(!("init" %in% ls())) init <- eval(formals(pkmod)$init)
-  if(is.null(pars)) pars <- try(eval(formals(pkmod)$pars),
-                                silent = TRUE)
-  if(is.null(ecmpt)) ecmpt <- length(init)
-  if(class(pars) == "try-error")
-    stop("PK parameters must either be provided as arguments to the TCI algorithm or as defaults to the PK model.")
+  # updates to pkmod
+  pkmod <- update(pkmod, ...)
 
-  ecmpt_name <- paste0("c",ecmpt)
+  # check that effect site compartment is specified
+  if(is.null(pkmod$ecmpt)) stop("ecmpt must be specified in new_pkmod to use tci_effect")
 
   # infusions corresponding to unit infusion for duration dtm and a null infusion
-  unit_inf <- create_intvl(data.frame(time = c(dtm, tmax_search), infrt = c(1,0)))
-  null_inf <- create_intvl(data.frame(time = tmax_search, infrt = 0))
+  unit_inf <- inf_manual(inf_tms = c(0,dtm,tmax_search), inf_rate = c(1,0,0))
+  null_inf <- inf_manual(inf_tms = c(0,tmax_search), inf_rate = c(0,0))
 
   # predict concentrations with no additional infusions and starting concentrations
-  B <- function(tm)
-    predict_pkmod(pkmod, inf = null_inf, pars = pars, init = init, tms = tm)[,ecmpt_name]
+  B <- function(tm) predict(pkmod, inf = null_inf, tms = tm)[,pkmod$ecmpt]
 
   # predict concentrations with unit infusion and no starting concentrations
-  E <- function(tm)
-    predict_pkmod(pkmod, inf = unit_inf, pars = pars, init = rep(0,length(init)), tms = tm)[,ecmpt_name]
+  E <- function(tm) predict(pkmod, inf = unit_inf, init = rep(0,pkmod$ncmpt), tms = tm)[,pkmod$ecmpt]
 
   # predict to find the longest time of maximum concentration
   # this will always be shorter when any prior drug has been infused
@@ -101,8 +103,8 @@ tci_effect <- function(Cet, pkmod, dtm = 1/6, ecmpt = NULL, tmax_search = 10,
 
   peak_ix <- min(which(diff(con_proj) < 0))
 
-  if(all(init == 0)){
-    kR <- Cet / con_proj[peak_ix]
+  if(all(pkmod$init == 0)){
+    kR <- Ct / con_proj[peak_ix]
   } else{
     tms <- seq(0, grid_tmax[peak_ix]+0.5, length.out = grid_len)
     Bpred <- B(tms)
@@ -115,11 +117,11 @@ tci_effect <- function(Cet, pkmod, dtm = 1/6, ecmpt = NULL, tmax_search = 10,
     while(jpeak0 != jpeak1){
       if(iter > 100) stop("Effect-site TCI algorithm did not converge.")
       jpeak0 = jpeak1
-      I0 = (Cet - Bpred[which(tms == jpeak0)]) / Epred[which(tms == jpeak0)]
+      I0 = (Ct - Bpred[which(tms == jpeak0)]) / Epred[which(tms == jpeak0)]
       jpeak1 = tms[which.max(Bpred + Epred*I0)]
       iter = iter + 1
     }
-    kR = unname((Cet-Bpred[which(tms == jpeak1)]) / Epred[which(tms == jpeak1)])
+    kR = unname((Ct-Bpred[which(tms == jpeak1)]) / Epred[which(tms == jpeak1)])
   }
 
   if(kR < 0) kR = 0
@@ -127,6 +129,7 @@ tci_effect <- function(Cet, pkmod, dtm = 1/6, ecmpt = NULL, tmax_search = 10,
 
   return(unname(kR))
 }
+
 
 
 #' Effect-site TCI algorithm with plasma targeting within small range of target
@@ -139,158 +142,242 @@ tci_effect <- function(Cet, pkmod, dtm = 1/6, ecmpt = NULL, tmax_search = 10,
 #'
 #' @param Ct Numeric vector of target effect-site concentrations.
 #' @param pkmod PK model
+#' @param dtm TCI update frequency. Defaults to 1/6, corresponding to 10-second
+#' intervals if model parameters are in terms of minutes.
 #' @param cptol Percentage of plasma concentration required to be within to switch
 #' to plasma targeting.
 #' @param cetol Percentage of effect-site concentration required to be within to switch
 #' to plasma targeting.
-#' @param cp_cmpt Position of central compartment. Defaults to first compartment.
-#' @param ce_cmpt Position of effect-site compartment. Defaults to last compartment.
-#' @param ... Arguments passed on to 'tci_plasma' and 'tci_effect' functions.
+#' @param ... Arguments passed on to 'tci_plasma' and 'tci_effect_only' functions, including
+#' to update.pkmod.
 #' @return Numeric value
 #' @examples
-#' tci_comb(Ct = 2, pkmod = pkmod2cpt, dtm = 1, pars = c(CL = 15, V1 = 10, Q2 = 10, V2 = 20))
+#' my_mod <- pkmod(pars_pk = c(v1 = 8.995, v2 = 17.297, v3 = 120.963, cl = 1.382,
+#' q2 = 0.919, q3 = 0.609, ke0 = 1.289))
+#' tci_effect(Ct = 2, pkmod = my_mod)
+#' # update parameters
+#' tci_effect(Ct = 2, pkmod = my_mod, pars_pk = c(v1 = 12, cl = 2))
 #' @export
-tci_comb <- function(Ct, pkmod, cptol = 0.2, cetol = 0.05, cp_cmpt = NULL, ce_cmpt = NULL, ...){
+tci_effect <- function(Ct, pkmod, dtm = 1/6, cptol = 0.2, cetol = 0.05, ...){
 
-  list2env(list(...), envir = environment())
+  pkmod <- update(pkmod, ...)
 
-  if(!("init" %in% ls())) init <- eval(formals(pkmod)$init)
-  if(is.null(cp_cmpt)) cp_cmpt <- 1
-  if(is.null(ce_cmpt)) ce_cmpt <- length(init)
-
-  if(Ct <= init[ce_cmpt])
+  # return zero if concentration exceeds target
+  if(Ct <= pkmod$init[pkmod$ecmpt])
     return(0)
 
   if(Ct>0){
-    if(abs((Ct-init[cp_cmpt]) / Ct) <= cptol & abs((Ct-init[ce_cmpt]) / Ct) <= cetol){
-      tci_plasma(Cpt = Ct, pkmod = pkmod, ...)
+    if(abs((Ct-pkmod$init[pkmod$pcmpt]) / Ct) <= cptol & abs((Ct-pkmod$init[pkmod$ecmpt]) / Ct) <= cetol){
+      tci_plasma(Ct = Ct, pkmod = pkmod, dtm = dtm)
     } else{
-      tci_effect(Cet = Ct, pkmod = pkmod, ...)
+      tci_effect_only(Ct = Ct, pkmod = pkmod, dtm = dtm)
     }
   } else 0
-
 }
 
-#' Apply TCI algorithm
+
+#' Apply a TCI algorithm to a `pkmod` object
 #'
-#' Function to iterate any arbitrary TCI algorithm to a series of points. By default,
-#' the function will update infusion rates at fixed intervals (e.g. every 10 seconds);
-#' however, users will have the option of waiting only calculating infusions after
-#' the prior target has been obtained.
-#'
-#' The user passes the `iterate_tci` function a matrix of target concentrations and times
-#' at which the target is set. This is translated into a step function that defines the
-#' concentration target at all times.
-#'
-#' @param Ct Vector of target concentrations
-#' @param tms Times at which the TCI algorithm should try to achieve the
-#' target concentrations
-#' @param pkmod PK model
-#' @param pars PK model parameters
-#' @param init Initial concentrations for PK model
-#' @param tci_alg TCI algorithm. Options are provided for effect-site
-#' (default) or plasma targeting. Alternate algorithms can be specified
-#' through the 'tci_custom' argument.
-#' @param tci_custom Custom TCI algorithm. Algorithm should have arguments
-#' specifying target concentration, PK model, and duration of infusion to
-#' reach the target.
-#' @param dtm Time difference between infusion rate updates.
-#' @param ... Arguments passed on to TCI algorithm.
-#' @return Matrix of infusions with class "tciinf" calculated to reach Ct targets.
+#' Apply a TCI algorithm to a set of targets and a `pkmod` object to calculate infusion
+#' rates.
+#' @param pkmod `pkmod` object created by `pkmod()`.
+#' @param target_vals A vector of numeric values indicating PK or PD targets for TCI algorithm.
+#' @param target_tms A vector of numeric values indicating times at which the TCI algorithm should
+#' begin targeting each value.
+#' @param type Type of TCI algorithm to be used. Options are plasma- or effect-site
+#' targeting.
+#' @param dtm TCI update frequency. Defaults to 1/6, corresponding to 10-second
+#' intervals if model parameters are in terms of minutes.
+#' @param custom_alg Custom TCI algorithm to be used instead of default plasma-
+#' or effect-site targeting algorithms. The algorithm should be a function that
+#' takes minimum arguments `Ct`, `pkmod`, and `dtm` and returns a single infusion
+#' rate. See `tci_plasma` or `tci_effect` for examples and vignette on custom
+#' models/algorithms for more details.
+#' @param inittm Initial time to start TCI algorithm. Cannot be greater than
+#' the minimum value of `target_tms`.
+#' @param ignore_pd Logical. Should the PD component of the pkmod object (if present)
+#' be ignored. By default, predict.tciinf will assume that 'value' refers to PD
+#' targets if a PD model is specified.
+#' @param ... Arguments passed to TCI algorithm
 #' @examples
-#' tci(Ct = c(2,3,4), tms = c(1,2,3), pkmod = pkmod2cpt, pars = c(CL = 15, V1 = 10, Q2 = 10, V2 = 20))
+#' # 3-compartment model with effect-site
+#' my_mod <- pkmod(pars_pk = c(v1 = 8.995, v2 = 17.297, v3 = 120.963, cl = 1.382,
+#' q2 = 0.919, q3 = 0.609, ke0 = 1.289))
+#' # plasma targeting
+#' apply_tci(my_mod, target_vals = c(2,3,4,4), target_tms = c(0,2,3,10), "plasma")
+#' # effect-site targeting
+#' apply_tci(my_mod, target_vals = c(2,3,4,4), target_tms = c(0,2,3,10), "effect")
+#' # incorporate  PD model
+#' my_mod_pd <- update(my_mod, pars_pd = c(c50 = 2.8, gamma = 1.47, e0 = 93, emx = 93),
+#' pdfn = emax, pdinv = emax_inv)
+#' apply_tci(my_mod_pd, target_vals = c(70,60,50,50), target_tms = c(0,2,3,10), "effect")
+#' @rdname apply_tci
 #' @export
-tci <- function(Ct, tms, pkmod, pars, init = NULL,
-                             tci_alg = c("effect","plasma"),
-                             tci_custom = NULL, dtm = 1/6, ...){
+apply_tci <- function(pkmod, target_vals, target_tms, type = c("plasma","effect"), dtm = NULL, custom_alg = NULL, inittm = 0, ignore_pd = FALSE, ...){
 
-  tci_alg <- match.arg(tci_alg)
-  if(is.list(pars)) pars <- unlist(pars)
+  if(length(target_vals) != length(target_tms))
+    stop("'target_vals' and 'target_tms' must have the same length")
+  if(!inherits(pkmod,"pkmod")) stop("pkmod must have class 'pkmod'")
 
-  ncpt <- length(eval(formals(pkmod)$init))
-  if(is.null(init)) init <- rep(0,ncpt)
+  type <- match.arg(type)
 
-  if(!is.null(tci_custom)){
-    tci_alg <- tci_custom
+  if(is.null(custom_alg)){
+    tci_alg <- list(tci_plasma, tci_effect)[[which(type == c("plasma","effect"))]]
   } else{
-    if(tci_alg == "effect" & ncpt > 1) tci_alg <- tci_comb
-    else tci_alg <- tci_plasma
+    if(!all(c("Ct","pkmod","dtm") %in% names(formals(custom_alg))))
+      stop('pkmod must contain arguments ("Ct","pkmod","dtm").')
+    tci_alg <- custom_alg
   }
 
-  # adjust times such that infusions start at tm = 0 and can be used by stepfun
-  inittm <- tms[1]
-  tms <- tms[-1] - inittm
+  if(is.null(dtm)) dtm <- eval(formals(tci_alg)$dtm)
+
+  tms <- target_tms
+  if(any(inittm > tms)) stop("inittm cannot be greater than any target times")
+
+  if(!is.null(pkmod$pdfn) & !ignore_pd){
+    Ct <- pkmod$pdinv(target_vals, pars = pkmod$pars_pd)
+  } else{
+    Ct <- target_vals
+  }
 
   # create step function to define targets at any point
-  sf <- stepfun(tms, Ct)
-
-  # define sequence of update times
-  updatetms <- seq(dtm, max(tms), dtm)
-  # add epsilon so that sf evaluates the final step
-  updatetms[length(updatetms)] <- updatetms[length(updatetms)] + 1e-5
+  tms <- tms-inittm
+  sf <- stepfun(tms, c(0,Ct))
+  # updatetms <- seq(0, max(tms), dtm)
+  updatetms <- seq(0, max(tms)-dtm, dtm)
 
   inf <- rep(NA, length(updatetms))
-  ini <- matrix(NA, nrow = ncpt, ncol = length(updatetms)+1)
-  ini[,1] <- init
+  ini <- matrix(NA, nrow = pkmod$ncmpt, ncol = length(updatetms)+1)
+  ini[,1] <- pkmod$init
 
   # iterate through times
   for(i in 1:length(updatetms)){
-    inf[i] <- tci_alg(sf(updatetms[i]), pkmod = pkmod, pars = pars,
-                      dtm = dtm, init = ini[,i], ...)
-    ini[,i+1] <- pkmod(tm = dtm, kR = inf[i], pars = pars, init = ini[,i])
+    inf[i] <- tci_alg(sf(updatetms[i]), pkmod = pkmod, dtm = dtm, init = ini[,i], ...)
+    ini[,i+1] <- pkmod$pkfn(tm = dtm, pars = pkmod$pars_pk, kR = inf[i], init = ini[,i])
   }
 
   startcon <- matrix(ini[,-ncol(ini)], ncol = nrow(ini), nrow = ncol(ini)-1, byrow = TRUE)
   endcon <- matrix(ini[,-1], ncol = nrow(ini), nrow = ncol(ini)-1, byrow = TRUE)
-  dose <- create_intvl(cbind(time = seq(dtm+inittm, max(tms)+inittm, dtm), infrt = inf), inittm = inittm)
-  out <- cbind(dose, dose[,"end"] - dose[,"begin"], sf(updatetms), startcon, endcon)
-  colnames(out) <- c("infrt","begin","end","dtm","Ct",paste0("c",1:ncpt, "_start"), paste0("c",1:ncpt, "_end"))
-  class(out) <- c("tciinf",class(out))
+  dose <- inf_manual(inf_tms = updatetms+inittm, inf_rate = inf, duration = dtm)
+  out <- cbind(dose, sf(updatetms), startcon, endcon)
+  colnames(out) <- c("begin","end","inf_rate","Ct",paste0("c",1:pkmod$ncmpt, "_start"),
+                     paste0("c",1:pkmod$ncmpt, "_end"))
+
+  if(!is.null(pkmod$pdfn) & !ignore_pd){
+    pdt <- pkmod$pdfn(out[,"Ct"], pkmod$pars_pd)
+    pdresp_start <- pkmod$pdfn(out[,paste0("c",pkmod$ecmpt,"_start")], pkmod$pars_pd)
+    pdresp_end <- pkmod$pdfn(out[,paste0("c",pkmod$ecmpt,"_end")], pkmod$pars_pd)
+
+    out <- cbind(out,
+                 pdt = pdt,
+                 pdresp_start = pdresp_start,
+                 pdresp_end = pdresp_end)
+  }
 
   return(out)
 }
 
 
-
-#' Function to extend TCI grid to a set of PD targets
+#' Target-controlled infusion
 #'
-#' @param pdresp PD targets to be passed on to the TCI algorithm.
-#' @param tms Times corresponding to each PD target
-#' @param pkmod PK model function
-#' @param pdmod PD model function
-#' @param pars_pk PK model parameters
-#' @param pars_pd PD model parameters
-#' @param pdinv PD inverse function
-#' @param ecmpt Number corresponding to effect-site compartment. Defaults
-#' to the last compartment.
-#' @param ... Arguments to be passed on to 'tci'. These can include alternate
-#' TCI algorithms if desired.
-#' @return Matrix of infusions with class "tciinf" calculated to reach PD targets.
+#' Apply a TCI algorithm to a set of targets and a `pkmod` or `poppkmod` object to calculate infusion
+#' rates.
+#' @param pkmod `pkmod` object created by `pkmod()` or a `poppkmod` object created by `poppkmod()`.
+#' @param target_vals A vector of numeric values indicating PK or PD targets for TCI algorithm.
+#' @param target_tms A vector of numeric values indicating times at which the TCI algorithm should
+#' begin targeting each value.
+#' @param type Type of TCI algorithm to be used. Options are plasma- or effect-site
+#' targeting.
+#' @param dtm TCI update frequency. Defaults to 1/6, corresponding to 10-second
+#' intervals if model parameters are in terms of minutes.
+#' @param custom_alg Custom TCI algorithm to be used instead of default plasma-
+#' or effect-site targeting algorithms. The algorithm should be a function that
+#' takes minimum arguments `Ct`, `pkmod`, and `dtm` and returns a single infusion
+#' rate. See `tci_plasma` or `tci_effect` for examples and vignette on custom
+#' models/algorithms for more details.
+#' @param inittm Initial time to start TCI algorithm. Cannot be greater than
+#' the minimum value of `target_tms`.
+#' @param ignore_pd Logical. Should the PD component of the pkmod object (if present)
+#' be ignored. By default, predict.tciinf will assume that 'value' refers to PD
+#' targets if a PD model is specified.
+#' @param ... Arguments passed to TCI algorithm
 #' @examples
-#' tci_pd(pdresp = c(80,70,70), tms = c(2,4,6), pkmod = pkmod2cpt, pdmod = emax,
-#' pars_pk = c(CL = 15, V1 = 10, Q2 = 10, V2 = 20),
-#' pars_pd = c(c50 = 1.5, gamma = 1.47, e0 = 100, emx = 100),
-#' pdinv = inv_emax)
+#' # 3-compartment model with effect-site
+#' my_mod <- pkmod(pars_pk = c(v1 = 8.995, v2 = 17.297, v3 = 120.963, cl = 1.382,
+#' q2 = 0.919, q3 = 0.609, ke0 = 1.289))
+#' # plasma targeting
+#' inf_tci(my_mod, target_vals = c(2,3,4,4), target_tms = c(0,2,3,10), "plasma")
+#' # effect-site targeting
+#' inf_tci(my_mod, target_vals = c(2,3,4,4), target_tms = c(0,2,3,10), "effect")
+#' # poppkmod object
+#' data <- data.frame(ID = 1:5, AGE = seq(20,60,by=10), TBW = seq(60,80,by=5),
+#' HGT = seq(150,190,by=10), MALE = c(TRUE,TRUE,FALSE,FALSE,FALSE))
+#' elvd_mod <- poppkmod(data, drug = "ppf", model = "eleveld")
+#' inf_tci(elvd_mod, target_vals = c(2,3,4,4), target_tms = c(0,2,3,10), "effect")
 #' @export
-tci_pd <- function(pdresp, tms, pkmod, pdmod, pars_pk, pars_pd, pdinv,
-                   ecmpt = NULL, ...){
-  Ct <- pdinv(pdresp, pars_pd)
-  con <- tci(Ct = Ct, tms = tms, pkmod = pkmod, pars = pars_pk, ...)
-  con_class <- class(con)
+inf_tci <- function(pkmod, target_vals, target_tms, type = c("plasma","effect"), dtm = NULL, custom_alg = NULL, inittm = 0, ignore_pd = FALSE, ...){
 
-  if(is.null(ecmpt))
-    ecmpt <- length(eval(formals(pkmod)$init))
-
-  pdt <- pdmod(con[,"Ct"], pars_pd)
-  pdresp_start <- pdmod(con[,paste0("c",ecmpt,"_start")], pars_pd)
-  pdresp_end <- pdmod(con[,paste0("c",ecmpt,"_end")], pars_pd)
-
-  con <- cbind(con,
-               pdt = pdt,
-               pdresp_start = pdresp_start,
-               pdresp_end = pdresp_end)
-  class(con) <- con_class
-  return(con)
+  if(!(inherits(pkmod,"pkmod")|inherits(pkmod, "poppkmod")))
+    stop("pkmod must have class 'pkmod' or 'poppkmod'")
+  if(inherits(pkmod,"pkmod")){
+    apply_tci(pkmod, target_vals, target_tms, type = match.arg(type), dtm = dtm, custom_alg = custom_alg, inittm = inittm, ignore_pd = ignore_pd, ...)
+  } else{
+    infs <- lapply(pkmod$pkmods, apply_tci, target_vals = target_vals, target_tms=target_tms, type = match.arg(type), dtm = dtm, custom_alg = custom_alg, inittm = inittm, ignore_pd = ignore_pd, ...)
+    cbind(id=rep(pkmod$ids, each = nrow(infs[[1]])),do.call("rbind", infs))
+  }
 }
 
 
+#'  infusion schedule
+#'
+#' Returns a data frame describing a set of infusions to be administered. Output
+#' can be used as argument "inf" in predict_pkmod.
+#'
+#' @param inf_tms Vector of time to begin infusions. If duration is NULL, times
+#' expected to include both infusion start and infusion end times.
+#' @param inf_rate Vector of infusion rates. Must lave length equal to either
+#' length(inf_tms) or 1. If length(inf_rate)=1, the same infusion rate will be
+#' administered at each time. Either inf_rate or target must be specified, but not both.
+#' @param duration Optional duration of infusions.
+#' @return Matrix of infusion rates, start and end times.
+#' @importFrom utils tail
+#' @examples
+#' # specify start and end times, as well as infusion rates (including 0).
+#' inf_manual(inf_tms = c(0,0.5,4,4.5,10), inf_rate = c(100,0,80,0,0))
+#' # specify start times, single infusion rate and single duration
+#' inf_manual(inf_tms = c(0,4), inf_rate = 100, duration = 0.5)
+#' # multiple infusion rates, single duration
+#' inf_manual(inf_tms = c(0,4), inf_rate = c(100,80), duration = 0.5)
+#' # multiple sequential infusion rates
+#' inf_manual(inf_tms = seq(0,1,1/6), inf_rate = 100, duration = 1/6)
+#' # single infusion rate, multiple durations
+#' inf_manual(inf_tms = c(0,4), inf_rate = 100, duration = c(0.5,1))
+#' # multiple infusion rates, multiple durations
+#' inf_manual(inf_tms = c(0,4), inf_rate = c(100,80), duration = c(0.5,1))
+#' @export
+inf_manual <- function(inf_tms, inf_rate, duration = NULL)
+{
+
+  if(!is.null(duration) & !(length(duration) %in% c(1, length(inf_tms))))
+    stop("duration length must be equal to 1 or length of time vector")
+  if(!(length(inf_rate) %in% c(1, length(inf_tms))))
+    stop("inf_rate length must be equal to 1 or length of time vector")
+  if(!(length(inf_rate) %in% c(1, length(inf_tms))) & tail(inf_rate,1)!=0 & !is.null(duration))
+    stop("Final value of inf_rate must be zero or duration must be non-null")
+  if(!is.null(duration)){
+    endtms <- inf_tms + duration
+    alltms <- union(round(inf_tms,5), round(endtms,5))
+    ord <- order(alltms)
+    if(length(inf_rate) == 1) inf_rate <- c(rep(inf_rate,length(inf_tms)), rep(0,length(endtms)))
+    out <- as.matrix(cbind(
+      begin = alltms[ord][-length(alltms)],
+      end = alltms[ord][-1],
+      inf_rate = inf_rate[ord][-length(alltms)]))
+    out[is.na(out[,"inf_rate"]),"inf_rate"] <- 0
+  } else{
+    out <- as.matrix(cbind(begin = inf_tms[-length(inf_tms)],
+                           end = inf_tms[-1],
+                           inf_rate = inf_rate[-length(inf_rate)]))
+  }
+  return(out)
+}

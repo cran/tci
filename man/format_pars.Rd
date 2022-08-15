@@ -28,6 +28,6 @@ Order parameters for 1-4 compartment models to be used in Rcpp functions in
 predict_pkmod method.
 }
 \examples{
-dose <- data.frame(time = c(0.5,4,4.5,10), infrt = c(100,0,100,0))
-create_intvl(dose)
+format_pars(c(V1 = 8.9, CL = 1.4, q2 = 0.9, v2 = 18), ncmpt = 2)
+format_pars(c(V1 = 8.9, CL = 1.4, q2 = 0.9, v2 = 18, cl2 = 3), ncmpt = 2)
 }
