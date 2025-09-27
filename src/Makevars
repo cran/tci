@@ -1,14 +1,16 @@
 
-## With R 3.1.0 or later, you can uncomment the following line to tell R to 
-## enable compilation with C++11 (where available)
+## Build settings for tci
 ##
-## Also, OpenMP support in Armadillo prefers C++11 support. However, for wider
-## availability of the package we do not yet enforce this here.  It is however
-## recommended for client packages to set it.
+## This package requires C++17 (see DESCRIPTION: SystemRequirements: C++17).
+## Toolchains provided with R >= 4.2.0 on all CRAN platforms support C++17.
 ##
-## And with R 3.4.0, and RcppArmadillo 0.7.960.*, we turn C++11 on as OpenMP
-## support within Armadillo prefers / requires it
-CXX_STD = CXX11
+## OpenMP: Armadillo can make use of OpenMP when available. The SHLIB_OPENMP_*
+## flags are included below. On macOS, users may need libomp installed for
+## OpenMP to be enabled at runtime; otherwise code will compile without OpenMP.
+##
+## Do not alter PKG_*FLAGS here unless you know your BLAS/LAPACK setup.
+## Keep CXX_STD in sync with the Rcpp plugin annotation in src/*.cpp.
+CXX_STD = CXX17
 
 PKG_CXXFLAGS = $(SHLIB_OPENMP_CXXFLAGS) 
 PKG_LIBS = $(SHLIB_OPENMP_CXXFLAGS) $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)

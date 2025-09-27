@@ -1,4 +1,4 @@
-## ---- include = FALSE---------------------------------------------------------
+## ----include = FALSE----------------------------------------------------------
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
@@ -10,14 +10,14 @@ knitr::opts_chunk$set(
   fig.width = 6
 )
 
-## ---- libraries, echo = FALSE-------------------------------------------------
+## ----libraries, echo = FALSE--------------------------------------------------
 library(tci)
 library(ggplot2)   # ggplot for plotting
 
-## ---- echo=FALSE, eval = FALSE------------------------------------------------
-#  old <- theme_set(theme_bw())
-#  ggplot <- function(...) ggplot2::ggplot(...) +
-#    scale_color_brewer(palette="Pastel1")
+## ----echo=FALSE, eval = FALSE-------------------------------------------------
+# old <- theme_set(theme_bw())
+# ggplot <- function(...) ggplot2::ggplot(...) +
+#   scale_color_brewer(palette="Pastel1")
 
 ## -----------------------------------------------------------------------------
 # create a data frame of patient covariates

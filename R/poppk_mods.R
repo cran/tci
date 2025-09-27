@@ -64,7 +64,7 @@ pkmod_schnider <- function(AGE, HGT, LBM = NULL,TBW=NULL,MALE=NULL,...){
   }
 
   # fixed effect estimates
-  theta <- c(4.27,18.9,238,1.89,1.29,0.836,-0.391,0.0456,-0.0681,0.0264,0.024)
+  theta <- c(4.27,18.9,238,1.89,1.29,0.836,-0.391,0.0456,-0.0681,0.0264,-0.024)
 
   V1  <- theta[1]
   V2  <- theta[2] + theta[7]*(AGE-53)

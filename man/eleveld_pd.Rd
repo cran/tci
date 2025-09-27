@@ -34,7 +34,7 @@ the Open TCI Initiative website (opentci.org) and based on contributions from a 
 datasets publically available.
 }
 \references{
-Eleveld et al. (2018) British Journal of Anesthesia Vol. 120, 5:942-959
-(\href{https://bjanaesthesia.org/article/S0007-0912(18)30051-5/abstract}{BJA})
+Eleveld et al. (2018) British Journal of Anesthesia Vol. 120, 5:942-959.\
+\doi{10.1016/j.bja.2018.01.018}
 }
 \keyword{datasets}

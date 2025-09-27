@@ -1,4 +1,4 @@
-## ---- include = FALSE---------------------------------------------------------
+## ----include = FALSE----------------------------------------------------------
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
@@ -10,17 +10,17 @@ knitr::opts_chunk$set(
   fig.width = 6
 )
 
-## ---- libraries---------------------------------------------------------------
+## ----libraries----------------------------------------------------------------
 library(tci)
 library(ggplot2)   # ggplot for plotting
 library(gridExtra) # arrangeGrob to arrange plots
 library(reshape2)  # melt function
 
-## ---- echo=FALSE, eval = FALSE------------------------------------------------
-#  old <- theme_set(theme_bw())
-#  ggplot <- function(...) ggplot2::ggplot(...) +
-#    scale_color_brewer(palette="Pastel1")
-#    # scale_color_manual(values = c("black","steelblue","seagreen"))
+## ----echo=FALSE, eval = FALSE-------------------------------------------------
+# old <- theme_set(theme_bw())
+# ggplot <- function(...) ggplot2::ggplot(...) +
+#   scale_color_brewer(palette="Pastel1")
+#   # scale_color_manual(values = c("black","steelblue","seagreen"))
 
 ## -----------------------------------------------------------------------------
 # 1-compartment model
